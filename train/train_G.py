@@ -85,7 +85,7 @@ from misc.utils import repackage_hidden_new
 from script.test_data import check_data
 
 # opt.manualSeed = random.randint(1, 10000) # fix seed
-opt.manual_seed = 42
+opt.manualSeed = 42
 print("Random Seed: ", opt.manualSeed)
 random.seed(opt.manualSeed)
 torch.manual_seed(opt.manualSeed)
