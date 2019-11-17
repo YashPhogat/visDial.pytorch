@@ -48,7 +48,7 @@ from misc.utils import repackage_hidden, clip_gradient, adjust_learning_rate, \
                     decode_txt, sample_batch_neg, l2_norm
 import misc.dataLoader as dl
 import misc.model as model
-from misc.encoder_QIH import _netE
+from misc.encoder_QIH_new_architecture import _netE
 from misc.netG import _netG
 import datetime
 from misc.utils import repackage_hidden_new
@@ -136,7 +136,7 @@ def eval():
     netG.eval()
 
     data_iter_val = iter(dataloader_val)
-    ques_hidden = netE.init_hidden(opt.batchSize)
+    mapped_h_and_mem = netE.init_hidden(opt.batchSize)
     hist_hidden = netE.init_hidden(opt.batchSize)
 
     i = 0
@@ -188,19 +188,18 @@ def eval():
             his_emb = netW(his_input, format = 'index')
 
 
-            ques_hidden = repackage_hidden_new(ques_hidden, batch_size)
+            mapped_h_and_mem = repackage_hidden_new(mapped_h_and_mem, batch_size)
             hist_hidden = repackage_hidden_new(hist_hidden, his_input.size(1))
 
-            encoder_feat, ques_hidden = netE(ques_emb, his_emb, img_input, \
-                                                ques_hidden, hist_hidden, rnd+1)
+            encoder_feat, mapped_h_and_mem = netE(ques_emb, his_emb, img_input, \
+                                                mapped_h_and_mem, hist_hidden, rnd+1)
 
-            _, ques_hidden = netG(encoder_feat.view(1,-1,opt.ninp), ques_hidden)
 
             #ans_emb = ans_emb.view(ans_length, -1, 100, opt.nhid)
             ans_score = torch.FloatTensor(batch_size, 100).zero_()
             # extend the hidden
             hidden_replicated = []
-            for hid in ques_hidden:
+            for hid in mapped_h_and_mem:
                 hidden_replicated.append(hid.view(opt.nlayers, batch_size, 1, \
                     opt.nhid).expand(opt.nlayers, batch_size, 100, opt.nhid).clone().view(opt.nlayers, -1, opt.nhid))
             hidden_replicated = tuple(hidden_replicated)
