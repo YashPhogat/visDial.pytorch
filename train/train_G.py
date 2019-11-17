@@ -181,7 +181,7 @@ def train(epoch):
     lr = adjust_learning_rate(optimizer, epoch, opt.lr)
     data_iter = iter(dataloader)
 
-    ques_hidden = netE.init_hidden(opt.batchSize)
+    mapped_h_and_mem = netE.init_hidden(opt.batchSize)
     hist_hidden = netE.init_hidden(opt.batchSize)
     average_loss = 0
     count = 0
@@ -217,16 +217,14 @@ def train(epoch):
             ques_emb = netW(ques_input, format = 'index')
             his_emb = netW(his_input, format = 'index')
 
-            ques_hidden = repackage_hidden_new(ques_hidden, batch_size)
+            mapped_h_and_mem = repackage_hidden_new(mapped_h_and_mem, batch_size)
             hist_hidden = repackage_hidden_new(hist_hidden, his_input.size(1))
 
-            encoder_feat, ques_hidden = netE(ques_emb, his_emb, img_input, \
-                                                ques_hidden, hist_hidden, rnd+1)
-
-            _, ques_hidden = netG(encoder_feat.view(1,-1,opt.ninp), ques_hidden)
+            encoder_feat, mapped_h_and_mem = netE(ques_emb, his_emb, img_input, \
+                                                mapped_h_and_mem, hist_hidden, rnd+1)
 
             ans_emb = netW(ans_input)
-            logprob, ques_hidden = netG(ans_emb, ques_hidden)
+            logprob, mapped_h_and_mem = netG(ans_emb, mapped_h_and_mem)
             loss = critG(logprob, ans_target.view(-1, 1))
 
             loss = loss / torch.sum(ans_target.data.gt(0))
