@@ -79,11 +79,11 @@ class _netE(nn.Module):
 
         
         print('ques_feat')
-        print(ques_feat.detach().numpy().shape)
+        print(ques_feat.cpu().detach().numpy().shape)
         print('attn_weighted_hist.view(-1, self.nhid)')
-        print(attn_weighted_hist.view(-1, self.nhid).detach().numpy().shape)
+        print(attn_weighted_hist.view(-1, self.nhid).cpu().detach().numpy().shape)
         print('attn_weighted_img_feat.view(-1, self.nhid)')
-        print(attn_weighted_img_feat.view(-1, self.nhid).detach().numpy().shape)
+        print(attn_weighted_img_feat.view(-1, self.nhid).cpu().detach().numpy().shape)
         concat_feat = torch.cat((ques_feat, attn_weighted_hist.view(-1, self.nhid), \
                                  attn_weighted_img_feat.view(-1, self.nhid)),1)
 
