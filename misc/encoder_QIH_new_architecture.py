@@ -41,12 +41,12 @@ class _netE(nn.Module):
         img_emb = F.tanh(self.img_embed(img_raw))
 
         ques_feat, ques_hidden = self.ques_rnn(ques_emb, ques_hidden)
-        ques_feat = ques_hidden[0]
-        ques_mem = ques_hidden[1]
+        ques_feat = ques_hidden[0][0]
+        ques_mem = ques_hidden[1][0]
 
         his_feat, his_hidden = self.his_rnn(his_emb, his_hidden)
-        his_feat = his_hidden[0]
-        his_mem = his_hidden[1]
+        his_feat = his_hidden[0][0]
+        his_mem = his_hidden[1][0]
 
         ques_emb_for_attn_hist = self.Wq_feat_to_emb_for_attention(ques_feat).view(-1, 1, self.nhid)
         his_emb_for_attn_hist = self.Wh_feat_to_emb_for_attention(his_feat).view(-1, rnd, self.nhid)
