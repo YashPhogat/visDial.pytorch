@@ -78,14 +78,14 @@ from misc.utils import repackage_hidden, clip_gradient, adjust_learning_rate, \
                     decode_txt, sample_batch_neg, l2_norm
 import misc.dataLoader as dl
 import misc.model as model
-from misc.encoder_QIH import _netE
+from misc.encoder_QIH_new_architecture import _netE
 from misc.netG import _netG
 import datetime
 from misc.utils import repackage_hidden_new
 from script.test_data import check_data
 
-opt.manualSeed = random.randint(1, 10000) # fix seed
-
+# opt.manualSeed = random.randint(1, 10000) # fix seed
+opt.manual_seed = 42
 print("Random Seed: ", opt.manualSeed)
 random.seed(opt.manualSeed)
 torch.manual_seed(opt.manualSeed)
