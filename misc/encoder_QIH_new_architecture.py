@@ -93,10 +93,10 @@ class _netE(nn.Module):
         encoder_feat = F.tanh(self.fc1(F.dropout(concat_feat, self.d, training=self.training)))
 
         mapped_feat = F.tanh(self.W_h_mapper(F.dropout(concat_feat)))
-        mapped_feat.unsqueeze_(0)
+        mapped_feat = mapped_feat.unsqueeze(0)
 
         mapped_mem = F.tanh(self.W_mem_mapper(F.dropout(concat_mem)))
-        mapped_mem.unsqueeze_(0)
+        mapped_mem = mapped_mem.unsqueeze(0)
 
         return encoder_feat, (mapped_feat, mapped_mem)
 
