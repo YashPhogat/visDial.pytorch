@@ -77,6 +77,13 @@ class _netE(nn.Module):
         attn_weighted_img_feat = torch.bmm(img_atten_weight.view(-1, 1, 49),
                                         img_emb.view(-1, 49, self.nhid))
 
+        
+        print('ques_feat')
+        print(ques_feat.detach().numpy().shape)
+        print('attn_weighted_hist.view(-1, self.nhid)')
+        print(attn_weighted_hist.view(-1, self.nhid).detach().numpy().shape)
+        print('attn_weighted_img_feat.view(-1, self.nhid)')
+        print(attn_weighted_img_feat.view(-1, self.nhid).detach().numpy().shape)
         concat_feat = torch.cat((ques_feat, attn_weighted_hist.view(-1, self.nhid), \
                                  attn_weighted_img_feat.view(-1, self.nhid)),1)
 
