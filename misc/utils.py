@@ -10,28 +10,6 @@ import os
 """
 Some utility Functions.
 """
-
-def get_train_logger(filename, save_path):
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(message)s')
-    # formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-
-    logger = logging.getLogger(filename + '_logger')
-    sh = logging.StreamHandler()
-    sh.setLevel(logging.INFO)
-    sh.setFormatter(formatter)
-    logger.addHandler(sh)
-
-    t = datetime.datetime.now()
-    cur_time = '%s-%s-%s' % (t.day, t.month, t.hour)
-
-    fh = logging.FileHandler(save_path + '_traindump' + '.log')
-    fh.setLevel(logging.INFO)
-    fh.setFormatter(formatter)
-    logger.addHandler(fh)
-
-    return logger
-
-
 def get_eval_logger(caller_file, model_path):
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(message)s')
     # formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
