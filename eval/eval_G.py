@@ -32,10 +32,10 @@ from torch.autograd import Variable
 parser = argparse.ArgumentParser()
 
 
-parser.add_argument('--data_dir', default='../script/old_data', help='folder to output images and model checkpoints')
-parser.add_argument('--input_img_h5', default='vdl_img_vgg.h5', help='')
-parser.add_argument('--input_ques_h5', default='visdial_data.h5', help='visdial_data.h5')
-parser.add_argument('--input_json', default='visdial_params.json', help='visdial_params.json')
+parser.add_argument('--data_dir', default='../script/data', help='folder to output images and model checkpoints')
+parser.add_argument('--input_img_h5', default='vdl_img_vgg_demo.h5', help='')
+parser.add_argument('--input_ques_h5', default='visdial_data_demo.h5', help='visdial_data.h5')
+parser.add_argument('--input_json', default='visdial_params_demo.json', help='visdial_params.json')
 
 parser.add_argument('--model_path', default='', help='folder to output images and model checkpoints')
 parser.add_argument('--cuda'  , action='store_true', help='enables cuda')
@@ -71,7 +71,7 @@ if torch.cuda.is_available() and not opt.cuda:
     print("WARNING: You have a CUDA device, so you should probably run with --cuda")
 
 print("=> loading checkpoint '{}'".format(opt.model_path))
-checkpoint = torch.load(opt.model_path)
+checkpoint = torch.load(opt.model_path, map_location=torch.device('cpu'))
 model_path = opt.model_path
 data_dir = opt.data_dir
 input_img_h5 = opt.input_img_h5
@@ -99,7 +99,7 @@ input_json = os.path.join(opt.data_dir, opt.input_json)
 
 dataset_val = dl.validate(input_img_h5=input_img_h5, input_ques_h5=input_ques_h5,
                 input_json=input_json, negative_sample = opt.negative_sample,
-                num_val = opt.num_val, data_split = 'test')
+                num_val = opt.num_val, data_split = 'val')
 
 
 dataloader_val = torch.utils.data.DataLoader(dataset_val, batch_size=opt.batchSize,
@@ -238,13 +238,16 @@ def eval():
         sys.stdout.write('Evaluating: {:d}/{:d}  \r' \
           .format(i, len(dataloader_val)))
 
-        if i % 50 == 0:
+        if i % 2 == 0:
             R1 = np.sum(np.array(rank_all_tmp)==1) / float(len(rank_all_tmp))
             R5 =  np.sum(np.array(rank_all_tmp)<=5) / float(len(rank_all_tmp))
             R10 = np.sum(np.array(rank_all_tmp)<=10) / float(len(rank_all_tmp))
             ave = np.sum(np.array(rank_all_tmp)) / float(len(rank_all_tmp))
             mrr = np.sum(1/(np.array(rank_all_tmp, dtype='float'))) / float(len(rank_all_tmp))
-            logger.warning('%d/%d: mrr: %f R1: %f R5 %f R10 %f Mean %f' %(1, len(dataloader_val), mrr, R1, R5, R10, ave))
+            logger.warning('%d/%d: mrr: %f R1: %f R5 %f R10 %f Mean %f' %(i, len(dataloader_val), mrr, R1, R5, R10, ave))
+
+        if(i==5):
+            break
 
     return rank_all_tmp
 
