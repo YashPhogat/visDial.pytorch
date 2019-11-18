@@ -261,7 +261,9 @@ noise_input = Variable(noise_input)
 batch_sample_idx = Variable(batch_sample_idx)
 gt_index = Variable(gt_index)
 
-atten = eval()
+output_obj = {}
+
+rank_all = eval()
 
 R1 = np.sum(np.array(rank_all)==1) / float(len(rank_all))
 R5 =  np.sum(np.array(rank_all)<=5) / float(len(rank_all))
