@@ -30,11 +30,11 @@ import h5py
 parser = argparse.ArgumentParser()
 
 parser.add_argument('--data_dir', default='', help='folder to output images and model checkpoints')
-parser.add_argument('--input_img_h5', default='vdl_img_vgg.h5', help='')
-parser.add_argument('--input_ques_h5', default='visdial_data.h5', help='visdial_data.h5')
-parser.add_argument('--input_json', default='visdial_params.json', help='visdial_params.json')
+parser.add_argument('--input_img_h5', default='../script/data/vdl_img_vgg_demo.h5', help='')
+parser.add_argument('--input_ques_h5', default='../script/data/visdial_data_demo.h5', help='visdial_data.h5')
+parser.add_argument('--input_json', default='../script/data/visdial_params_demo.json', help='visdial_params.json')
 
-parser.add_argument('--model_path', default='', help='folder to output images and model checkpoints')
+parser.add_argument('--model_path', default='../train/save/D/dis.pth', help='folder to output images and model checkpoints')
 parser.add_argument('--cuda'  , action='store_true', help='enables cuda')
 
 opt = parser.parse_args()
@@ -57,7 +57,7 @@ if torch.cuda.is_available() and not opt.cuda:
 
 if opt.model_path != '':
     print("=> loading checkpoint '{}'".format(opt.model_path))
-    checkpoint = torch.load(opt.model_path)
+    checkpoint = torch.load(opt.model_path, map_location=torch.device('cpu'))
     model_path = opt.model_path
     data_dir = opt.data_dir
     input_img_h5 = opt.input_img_h5
@@ -68,6 +68,9 @@ if opt.model_path != '':
     opt.batchSize = 5
     opt.data_dir = data_dir
     opt.model_path = model_path
+    opt.input_img_h5 = input_img_h5
+    opt.input_ques_h5 = input_ques_h5
+    opt.input_json = input_json
 
 input_img_h5 = os.path.join(opt.data_dir, opt.input_img_h5)
 input_ques_h5 = os.path.join(opt.data_dir, opt.input_ques_h5)
@@ -75,11 +78,11 @@ input_json = os.path.join(opt.data_dir, opt.input_json)
 
 dataset_val = dl.validate(input_img_h5=input_img_h5, input_ques_h5=input_ques_h5,
                 input_json=input_json, negative_sample = opt.negative_sample,
-                num_val = opt.num_val, data_split = 'test')
+                num_val = opt.num_val, data_split = 'val')
 
 
 dataloader_val = torch.utils.data.DataLoader(dataset_val, batch_size=opt.batchSize,
-                                         shuffle=False, num_workers=int(opt.workers))
+                                         shuffle=False, num_workers=0)
 ####################################################################################
 # Build the Model
 ####################################################################################
@@ -142,24 +145,24 @@ def eval():
 
         for rnd in range(10):
             #todo: remove this hard coded rnd = 5 after verifying!
-            rnd=5
+            # rnd=5
             # get the corresponding round QA and history.
-            ques = question[:,rnd,:].t()
+            ques, tans = question[:,rnd,:].t(), answerT[:, rnd, :].t()
             his = history[:,:rnd+1,:].clone().view(-1, his_length).t()
 
             opt_ans = opt_answerT[:,rnd,:].clone().view(-1, ans_length).t()
             gt_id = answer_ids[:,rnd]
 
-            ques_input = torch.LongTensor(ques.size()).cuda()
+            ques_input = torch.LongTensor(ques.size()).cpu()
             ques_input.copy_(ques)
 
-            his_input = torch.LongTensor(his.size()).cuda()
+            his_input = torch.LongTensor(his.size()).cpu()
             his_input.copy_(his)
 
-            gt_index = torch.LongTensor(gt_id.size()).cuda()
+            gt_index = torch.LongTensor(gt_id.size()).cpu()
             gt_index.copy_(gt_id)
 
-            opt_ans_input = torch.LongTensor(opt_ans.size()).cuda()
+            opt_ans_input = torch.LongTensor(opt_ans.size()).cpu()
             opt_ans_input.copy_(opt_ans)
 
             opt_len = opt_answerLen[:,rnd,:].clone().view(-1)
@@ -190,11 +193,33 @@ def eval():
             gt_score = score.view(-1).index_select(0, gt_index)
             sort_score, sort_idx = torch.sort(score, 1, descending=True)
 
+            opt_answer_cur_ques = opt_answerT.detach().numpy()[:, rnd, :, :] #5, 100, 9
+            top_10_sort_idx = sort_idx.detach().numpy()[:, 0:10]
+            first_dim_indices = np.broadcast_to(np.arange(batch_size).reshape(batch_size,1),(batch_size,10)).reshape(batch_size*10)
+            top_10_ans_word_indices = opt_answer_cur_ques[first_dim_indices, top_10_sort_idx.reshape(batch_size*10), :].reshape(batch_size, 10, 9)
+            top_10_ans_txt_rank_wise = [] #10, 5 as strings
+
+            ques_txt = decode_txt(itow, questionL[:, rnd, :].t())
+            ans_txt = decode_txt(itow, tans)
+
+            for pos in range(10):
+                top_10_temp = decode_txt(itow, torch.tensor(top_10_ans_word_indices[:, pos, :]).t())
+                top_10_ans_txt_rank_wise.append(top_10_temp)
+
+            top_10_ans_txt = np.array(top_10_ans_txt_rank_wise, dtype=str).T
+
             count = sort_score.gt(gt_score.view(-1,1).expand_as(sort_score))
             rank = count.sum(1) + 1
+            gt_rank_cpu = rank.view(-1).data.cpu().numpy()
             rank_all_tmp += list(rank.view(-1).data.cpu().numpy())
 
+            for b in range(batch_size):
+                save_tmp[b].append({"ques": ques_txt[b], "gt_ans": ans_txt[b], "top_10_disc_ans": top_10_ans_txt.tolist()[b],
+                                    "gt_ans_rank": str(gt_rank_cpu[b]), "rnd": rnd, "img_id": img_id[b].item()})
+
         i += 1
+
+        print(i)
 
         result_all += save_tmp
 
@@ -206,7 +231,10 @@ def eval():
             mrr = np.sum(1/(np.array(rank_all_tmp, dtype='float'))) / float(len(rank_all_tmp))
             print ('%d/%d: mrr: %f R1: %f R5 %f R10 %f Mean %f' %(1, len(dataloader_val), mrr, R1, R5, R10, ave))
 
-    return img_atten
+        if(i==2):
+            break
+
+    return (rank_all_tmp, result_all)
 
 ####################################################################################
 # Main
@@ -261,9 +289,9 @@ noise_input = Variable(noise_input)
 batch_sample_idx = Variable(batch_sample_idx)
 gt_index = Variable(gt_index)
 
-output_obj = {}
+output_obj = []
 
-rank_all = eval()
+rank_all, result_all = eval()
 
 R1 = np.sum(np.array(rank_all)==1) / float(len(rank_all))
 R5 =  np.sum(np.array(rank_all)<=5) / float(len(rank_all))
@@ -271,3 +299,5 @@ R10 = np.sum(np.array(rank_all)<=10) / float(len(rank_all))
 ave = np.sum(np.array(rank_all)) / float(len(rank_all))
 mrr = np.sum(1/(np.array(rank_all, dtype='float'))) / float(len(rank_all))
 print ('%d/%d: mrr: %f R1: %f R5 %f R10 %f Mean %f' %(1, len(dataloader_val), mrr, R1, R5, R10, ave))
+print(result_all)
+json.dump(result_all, open('top_10_disc.json', 'w'))
