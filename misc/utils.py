@@ -22,8 +22,8 @@ def get_eval_logger(caller_file, model_path):
 
     t = datetime.datetime.now()
     cur_time = '%s-%s-%s' % (t.day, t.month, t.hour)
-
-    filename = os.path.join(os.path.dirname(model_path), caller_file+'.log')
+    print(caller_file + os.path.splitext(os.path.basename(model_path))[0])
+    filename = os.path.join(os.path.dirname(model_path), caller_file+os.path.splitext(os.path.basename(model_path))[0]+'.log')
     fh = logging.FileHandler(filename)
     fh.setLevel(logging.INFO)
     fh.setFormatter(formatter)
