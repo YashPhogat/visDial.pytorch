@@ -117,7 +117,10 @@ class train(data.Dataset) :  # torch wrapper
             # random select the negative samples.
             ans_idx[i] = opt_ids[self.ans_ids[index, i]]
             # exclude the gt index.
-            opt_ids = np.delete(opt_ids, ans_idx[i], 0)
+
+            del_idx = np.where(opt_ids==ans_idx[i])
+            opt_ids = np.delete(opt_ids, del_idx, 0)
+            # opt_ids = np.delete(opt_ids, ans_idx[i], 0)
             random.shuffle(opt_ids)
             for j in range(self.negative_sample) :
                 ids = opt_ids[j]

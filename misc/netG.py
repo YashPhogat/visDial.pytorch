@@ -17,7 +17,8 @@ class _netG(nn.Module):
 		self.nhid = nhid
 		self.nlayers = nlayers
 		self.mos_flag = mos
-		self.mos_layer = mixture_of_softmaxes(nhid, 5, ntoken + 1)
+		if self.mos_flag:
+			self.mos_layer = mixture_of_softmaxes(nhid, 5, ntoken + 1)
 		self.decoder = nn.Linear(nhid, ntoken+1)
 		self.d = dropout
 		self.beta = 3
@@ -76,7 +77,8 @@ class _netG(nn.Module):
 			beam_logprobs_sum = torch.zeros(beam_size) # running sum of logprobs for each beam
 			for t in range(self.seq_length + 1):
 				if t == 0: # input <bos>
-					it = input.data.resize_(1, beam_size).fill_(self.vocab_size)
+					it = torch.LongTensor(1,beam_size)
+					it.fill_(self.vocab_size)
 					xt = netW(Variable(it, requires_grad=False))
 				else:
 					"""perform a beam merge. that is,
@@ -98,7 +100,7 @@ class _netG(nn.Module):
 								local_logprob.data.fill_(-9999)
 
 							candidate_logprob = beam_logprobs_sum[qq] + local_logprob
-							candidates.append({'c':ix.data[qq,cc], 'q':qq, 'p':candidate_logprob.data[0], 'r':local_logprob.data[0]})
+							candidates.append({'c':ix.data[qq,cc], 'q':qq, 'p':candidate_logprob.data.item(), 'r':local_logprob.data.item()})
 
 					candidates = sorted(candidates, key=lambda x: -x['p'])
 
@@ -147,11 +149,11 @@ class _netG(nn.Module):
 				if self.mos_flag:
 					decoded = self.mos_layer(output.view(
 						output.size(0) * output.size(1), output.size(2)))
-					logprob = torch.log(self.beta * decoded)
+					logprobs = torch.log(self.beta * decoded)
 				else:
 					decoded = self.decoder(output.view(
 						output.size(0) * output.size(1), output.size(2)))
-					logprob = F.log_softmax(self.beta * decoded)
+					logprobs = F.log_softmax(self.beta * decoded)
 
 			self.done_beams[k] = sorted(self.done_beams[k], key=lambda x: -x['p'])
 			seq[:, k] = self.done_beams[k][0]['seq'] # the first beam has highest cumulative score
@@ -205,10 +207,10 @@ class _netG(nn.Module):
 			if self.mos_flag:
 				decoded = self.mos_layer(output.view(
 					output.size(0) * output.size(1), output.size(2)))
-				logprob = torch.log(self.beta * decoded)
+				logprobs = torch.log(self.beta * decoded)
 			else:
 				decoded = self.decoder(output.view(
 					output.size(0) * output.size(1), output.size(2)))
-				logprob = F.log_softmax(self.beta * decoded)
+				logprobs = F.log_softmax(self.beta * decoded)
 
 		return torch.cat([_.unsqueeze(1) for _ in seq], 1), torch.cat([_.unsqueeze(1) for _ in seqLogprobs], 1)

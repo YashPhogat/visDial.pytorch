@@ -1,0 +1,27 @@
+import h5py
+import json
+import numpy as np
+
+file_path = '../script/data/visdial_params_demo.json'
+
+f = json.load(open(file_path, 'r'))
+itow = f['itow']
+img_info = f['img_train']
+
+img_list = []
+for i in img_info:
+    img_list.append(i['path'])
+
+print(img_list[5])
+
+# f = h5py.File('data_demo.hdf5','r+')
+
+data_matrix = np.ones((10, 3))
+
+# Write data to HDF5
+with h5py.File('file.hdf5', 'a') as data_file:
+    data_file['group_name'].resize(data_file['group_name'].shape[0] + data_matrix.shape[0],axis=0)
+    data_file['group_name'][-data_matrix.shape[0]:] = data_matrix
+
+f = h5py.File('file.hdf5', 'r')
+print(f['group_name'][:,:])

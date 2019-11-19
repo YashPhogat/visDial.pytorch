@@ -147,10 +147,11 @@ class nPairLoss(nn.Module):
         num_wrong = wrong.size(1)
         batch_size = feat.size(0)
 
-        feat = feat.view(-1, self.ninp, 1)
+        feat = feat.view(-1, self.ninp, 1) # (batch_size, ninp, 1)
         right_dis = torch.bmm(right.view(-1, 1, self.ninp), feat)
         wrong_dis = torch.bmm(wrong, feat)
         batch_wrong_dis = torch.bmm(batch_wrong, feat)
+
 
         wrong_score = torch.sum(torch.exp(wrong_dis - right_dis.expand_as(wrong_dis)),1) \
                 + torch.sum(torch.exp(batch_wrong_dis - right_dis.expand_as(batch_wrong_dis)),1)
@@ -172,6 +173,8 @@ class nPairLoss(nn.Module):
             return loss, loss_fake.data[0] / batch_size
         else:
             return loss
+
+
 
 class G_loss(nn.Module):
     """

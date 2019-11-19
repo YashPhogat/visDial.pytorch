@@ -3,7 +3,7 @@ import argparse
 import os
 import random
 import sys
-sys.path.append(os.getcwd())
+sys.path.insert(1,'/home/smit/PycharmProjects/visDial_CPU/visDial.pytorch/')
 
 import pdb
 import time
@@ -33,12 +33,12 @@ from misc.utils import repackage_hidden_new
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument('--input_img_h5', default='../data/vdl_img_vgg_demo.h5', help='path to dataset, now hdf5 file')
-parser.add_argument('--input_ques_h5', default='../data/visdial_data_demo.h5', help='path to dataset, now hdf5 file')
-parser.add_argument('--input_json', default='../data/visdial_params_demo.json', help='path to dataset, now hdf5 file')
+parser.add_argument('--input_img_h5', default='../script/data/vdl_img_vgg_demo.h5', help='path to dataset, now hdf5 file')
+parser.add_argument('--input_ques_h5', default='../script/data/visdial_data_demo.h5', help='path to dataset, now hdf5 file')
+parser.add_argument('--input_json', default='../script/data/visdial_params_demo.json', help='path to dataset, now hdf5 file')
 parser.add_argument('--outf', default='./save', help='folder to output images and model checkpoints')
 parser.add_argument('--encoder', default='G_QIH_VGG', help='what encoder to use.')
-parser.add_argument('--model_path', default='', help='folder to output images and model checkpoints')
+parser.add_argument('--model_path', default='/home/smit/saved_model/epoch_30.pth', help='folder to output images and model checkpoints')
 parser.add_argument('--num_val', default=20, help='number of image split out as validation set.')
 
 parser.add_argument('--niter', type=int, default=50, help='number of epochs to train for')
@@ -72,6 +72,8 @@ parser.add_argument('--log_interval', type=int, default=1, help='how many iterat
 opt = parser.parse_args()
 print(opt)
 
+#---------------------------------------------------------
+opt.model_path = './save/Pre_trained_G/epoch_22.pth'
 opt.manualSeed = random.randint(1, 10000) # fix seed
 
 print("Random Seed: ", opt.manualSeed)
@@ -85,9 +87,9 @@ if torch.cuda.is_available() and not opt.cuda:
 
 if opt.model_path != '':
     print("=> loading checkpoint '{}'".format(opt.model_path))
-    checkpoint = torch.load(opt.model_path)
+    checkpoint = torch.load(opt.model_path,map_location=torch.device('cpu'))
     model_path = opt.model_path
-    opt = checkpoint['opt']
+    # opt = checkpoint['opt']
     opt.start_epoch = checkpoint['epoch']
     opt.model_path = model_path
     opt.batchSize = 128
@@ -359,6 +361,7 @@ optimizer = optim.Adam([{'params': netW.parameters()},
                         {'params': netE.parameters()}], lr=opt.lr, betas=(opt.beta1, 0.999))
 
 history = []
+
 
 for epoch in range(opt.start_epoch+1, opt.niter):
     t = time.time()
