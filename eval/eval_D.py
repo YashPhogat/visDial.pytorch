@@ -166,8 +166,6 @@ def eval():
 
     print('early_stop: {}'.format(early_stop))
     print('dataloader_size: {}'.format(dataloader_size))
-    time.sleep(500)
-
 
     while i < dataloader_size:#len(1000):
         data = data_iter_val.next()
