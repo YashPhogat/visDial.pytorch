@@ -206,9 +206,9 @@ def train(epoch):
     early_stop = int(opt.early_stop/opt.batchSize)
     dataloader_size = min(len(dataloader),early_stop)
 
-    print('early_stop: {}'.format(early_stop))
-    print('dataloader_size: {}'.format(dataloader_size))
-    time.sleep(500)
+    # print('early_stop: {}'.format(early_stop))
+    # print('dataloader_size: {}'.format(dataloader_size))
+    # time.sleep(500)
 
     while i < dataloader_size: # len(dataloader):
 
