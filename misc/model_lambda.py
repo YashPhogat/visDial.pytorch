@@ -142,10 +142,11 @@ class nPairLoss(nn.Module):
     Improved Deep Metric Learning with Multi-class N-pair Loss Objective (NIPS)
     """
 
-    def __init__(self, ninp, margin):
+    def __init__(self, ninp, margin, pl_sigma):
         super(nPairLoss, self).__init__()
         self.ninp = ninp
         self.margin = np.log(margin)
+        self.pl_sigma = pl_sigma
 
     def forward(self, combined, negative_samples, batch_negative_samples):
 
@@ -169,7 +170,7 @@ class nPairLoss(nn.Module):
         mrr_dif = 1/rank[:,:1].float() - 1/rank[:,1:].view(batch_size,total_ans-1).float()
 
         # lamb updates
-        lamb_updates = (-1/(1 + exped)) * mrr_dif.abs()
+        lamb_updates = (-self.pl_sigma/(1 + self.pl_sigma*exped)) * mrr_dif.abs()
         lambs1 = lamb_updates.sum(dim=1, keepdim=True)
         lambs_rest = -1*lamb_updates
         lambs = torch.cat((lambs1,lambs_rest),dim=1)
@@ -179,8 +180,8 @@ class nPairLoss(nn.Module):
         wrong_dis = combined[:,1:negative_samples+1]
         batch_wrong_dis = combined[:,negative_samples+1:]
 
-        wrong_score = torch.sum(torch.exp(wrong_dis - right_dis.expand_as(wrong_dis)), 1) \
-                      + torch.sum(torch.exp(batch_wrong_dis - right_dis.expand_as(batch_wrong_dis)), 1)
+        wrong_score = self.pl_sigma*(torch.sum(torch.exp(wrong_dis - right_dis.expand_as(wrong_dis)), 1) \
+                      + torch.sum(torch.exp(batch_wrong_dis - right_dis.expand_as(batch_wrong_dis)), 1))
 
         loss_dis = torch.sum(torch.log(wrong_score + 1))
 
