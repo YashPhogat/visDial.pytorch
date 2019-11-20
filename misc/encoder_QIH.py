@@ -54,7 +54,7 @@ class _netE(nn.Module):
         with torch.no_grad():
             ques_feat, _ = self.model(ques_tokens_tensor,ques_segments_tensor,question_attention_mask)
         print('ques_feat size before mean {}'.format(ques_feat[11].size()))
-        ques_feat = torch.mean(ques_feat[11],1)
+        ques_feat = torch.mean(ques_feat[11],0)
         print('ques_feat size: {}'.format(ques_feat.size()))
         ques_c = self.Wb2qc(ques_feat)
         ques_feat = self.Wb2q(ques_feat)
@@ -62,7 +62,7 @@ class _netE(nn.Module):
 
         with torch.no_grad():
             his_feat, _ = self.model(his_tokens_tensor, his_segments_tensor,his_attention_mask)
-        his_feat = torch.mean(his_feat[11],1)
+        his_feat = torch.mean(his_feat[11],0)
         his_c = self.Wb2hc(his_feat)
         his_feat = self.Wb2h(his_feat)
         his_hidden = (his_feat, his_c)
