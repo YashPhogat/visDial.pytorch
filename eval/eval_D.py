@@ -42,6 +42,13 @@ parser.add_argument('--path_to_home',type=str)
 opt = parser.parse_args()
 sys.path.insert(1, opt.path_to_home)
 
+# json output path
+pth = os.path.split(opt.model_path)
+tail = pth[1]
+tail2 = tail[:-4]
+json_path = tail2+'.json'
+print('output will be dumped to: '+ json_path )
+
 if(opt.model_path==''):
     print('Model path required for evaluation')
     exit(255)
@@ -233,9 +240,12 @@ def eval():
             gt_rank_cpu = rank.view(-1).data.cpu().numpy()
             rank_all_tmp += list(rank.view(-1).data.cpu().numpy())
 
+            sort_score_cpu = sort_score.data.cpu().numpy()
+
             for b in range(batch_size):
                 save_tmp[b].append({"ques": ques_txt[b], "gt_ans": ans_txt[b], "top_10_disc_ans": top_10_ans_txt.tolist()[b],
-                                    "gt_ans_rank": str(gt_rank_cpu[b]), "rnd": rnd, "img_id": img_id[b].item()})
+                                    "gt_ans_rank": str(gt_rank_cpu[b]), "rnd": rnd, "img_id": img_id[b].item(),
+                                    "top_10_scores": sort_score_cpu[b][:10].tolist()})
 
         i += 1
 
@@ -314,4 +324,4 @@ mrr = np.sum(1/(np.array(rank_all, dtype='float'))) / float(len(rank_all))
 logger.warning('Final result: ')
 logger.warning('%d/%d: mrr: %f R1: %f R5 %f R10 %f Mean %f' %(1, len(dataloader_val), mrr, R1, R5, R10, ave))
 print(result_all)
-json.dump(result_all, open('top_10_disc.json', 'w'))
+json.dump(result_all, open(json_path, 'w'))
