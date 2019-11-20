@@ -76,6 +76,7 @@ parser.add_argument('--margin', type=float, default=2, help='number of epochs to
 parser.add_argument('--log_interval', type=int, default=5, help='how many iterations show the log info')
 parser.add_argument('--path_to_home',type=str)
 parser.add_argument('--exp_name', type=str, help='name of the expemriment')
+parser.add_argument('--early_stop', type=int, default='1000000', help='datapoints to consider')
 
 opt = parser.parse_args()
 print(opt)
@@ -195,7 +196,8 @@ def train(epoch):
     i = 0
 
     # size of data to work on
-    dataloader_size = 80
+    early_stop = int(opt.early_stop / opt.batchSize)
+    dataloader_size = min(len(dataloader), early_stop)
     while i < dataloader_size: #len(dataloader):
 
         t1 = time.time()
