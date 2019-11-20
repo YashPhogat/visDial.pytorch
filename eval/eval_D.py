@@ -118,7 +118,7 @@ netE = _netE(opt.model, opt.ninp, opt.nhid, opt.nlayers, opt.dropout, img_feat_s
 
 netW = model._netW(n_words, opt.ninp, opt.dropout)
 netD = model._netD(opt.model, opt.ninp, opt.nhid, opt.nlayers, n_words, opt.dropout)
-critD = model.nPairLoss(opt.nhid, 2)
+critD = model.nPairLoss(opt.nhid, 2, opt.alpha_norm, opt.pl_sigma)
 
 
 netW.load_state_dict(checkpoint['netW'])

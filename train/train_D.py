@@ -121,8 +121,8 @@ if opt.model_path != '':
 else:
     # create new folder.
     t = datetime.datetime.now()
-    cur_time = '%s-%s-%s' %(t.day, t.month, t.hour)
-    save_path = os.path.join(opt.outf, opt.exp_name, opt.decoder + '.' + cur_time)
+    # cur_time = '%s-%s-%s' %(t.day, t.month, t.hour)
+    save_path = os.path.join(opt.outf, opt.exp_name)
     opt.save_path = save_path
     try:
         os.makedirs(save_path)
