@@ -86,6 +86,7 @@ parser.add_argument('--early_stop', type=int, default='1000000', help='datapoint
 
 opt = parser.parse_args()
 print(opt)
+time.sleep(500)
 sys.path.insert(1, opt.path_to_home)
 
 from misc.utils import repackage_hidden, repackage_hidden_new, clip_gradient, adjust_learning_rate, \

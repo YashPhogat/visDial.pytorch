@@ -41,6 +41,8 @@ parser.add_argument('--path_to_home',type=str)
 parser.add_argument('--early_stop', type=int, default='1000000', help='datapoints to consider')
 
 opt = parser.parse_args()
+print(opt)
+time.sleep(500)
 sys.path.insert(1, opt.path_to_home)
 
 if(opt.model_path==''):
