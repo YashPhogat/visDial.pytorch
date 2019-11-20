@@ -53,6 +53,7 @@ class _netE(nn.Module):
 
         with torch.no_grad():
             ques_feat, _ = self.model(ques_tokens_tensor,ques_segments_tensor,question_attention_mask)
+        print('ques_feat size before mean {}'.format(ques_feat.size()))
         ques_feat = torch.mean(ques_feat[11],1)
         print('ques_feat size: {}'.format(ques_feat.size()))
         ques_c = self.Wb2qc(ques_feat)
