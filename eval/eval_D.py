@@ -42,7 +42,7 @@ parser.add_argument('--early_stop', type=int, default='1000000', help='datapoint
 
 opt = parser.parse_args()
 print(opt)
-time.sleep(500)
+# time.sleep(500)
 sys.path.insert(1, opt.path_to_home)
 
 # json output path
@@ -90,6 +90,7 @@ input_img_h5 = opt.input_img_h5
 input_ques_h5 = opt.input_ques_h5
 input_json = opt.input_json
 prev_log_iter = opt.log_iter
+early_stop = opt.early_stop
 opt = checkpoint['opt']
 opt.start_epoch = checkpoint['epoch']
 opt.batchSize = 5
@@ -99,6 +100,7 @@ opt.input_img_h5 = input_img_h5
 opt.input_ques_h5 = input_ques_h5
 opt.input_json = input_json
 opt.log_iter = prev_log_iter
+opt.early_stop = early_stop
 
 logger = get_eval_logger(os.path.splitext(os.path.basename(__file__))[0], opt.model_path)
 
@@ -164,6 +166,11 @@ def eval():
 
     early_stop = int(opt.early_stop / opt.batchSize)
     dataloader_size = min(len(dataloader_val), early_stop)
+
+    print('early_stop: {}'.format(early_stop))
+    print('dataloader_size: {}'.format(dataloader_size))
+    time.sleep(500)
+
 
     while i < dataloader_size:#len(1000):
         data = data_iter_val.next()
