@@ -86,7 +86,7 @@ parser.add_argument('--early_stop', type=int, default='1000000', help='datapoint
 
 opt = parser.parse_args()
 print(opt)
-time.sleep(500)
+# time.sleep(500)
 sys.path.insert(1, opt.path_to_home)
 
 from misc.utils import repackage_hidden, repackage_hidden_new, clip_gradient, adjust_learning_rate, \
@@ -205,6 +205,11 @@ def train(epoch):
     # size of data to work on
     early_stop = int(opt.early_stop/opt.batchSize)
     dataloader_size = min(len(dataloader),early_stop)
+
+    print('early_stop: {}'.format(early_stop))
+    print('dataloader_size: {}'.format(dataloader_size))
+    time.sleep(500)
+
     while i < dataloader_size: # len(dataloader):
 
         t1 = time.time()
