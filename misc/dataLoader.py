@@ -13,7 +13,7 @@ from pytorch_pretrained_bert import BertTokenizer, BertModel, BertForMaskedLM
 
 
 class train(data.Dataset) :  # torch wrapper
-    def __init__(self, input_img_h5, input_ques_h5, input_json, negative_sample, num_val, data_split) :
+    def __init__(self, input_img_h5, input_ques_h5, input_json, negative_sample, num_val, data_split,max_token_length) :
         #This is the number of images for which we have copied the new vgg features to the parallely
         #accessible h5 file. DO NOT CHANGE THIS!!!
         TOTAL_VALID_IMAGES = 82000
@@ -81,7 +81,7 @@ class train(data.Dataset) :  # torch wrapper
 
         # bert tokenzier
         self.tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
-        self.max_token_size = 100
+        self.max_token_size = max_token_length
 
     def __getitem__(self, index) :
         # get the image
@@ -238,7 +238,7 @@ class train(data.Dataset) :  # torch wrapper
 
 
 class validate(data.Dataset) :  # torch wrapper
-    def __init__(self, input_img_h5, input_ques_h5, input_json, negative_sample, num_val, data_split) :
+    def __init__(self, input_img_h5, input_ques_h5, input_json, negative_sample, num_val, data_split,max_token_length) :
         # This is the number of images for which we have copied the new vgg features to the parallely
         # accessible h5 file. DO NOT CHANGE THIS!!!
         TOTAL_VALID_TEST_IMAGES = 40000
