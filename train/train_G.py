@@ -197,6 +197,14 @@ def train(epoch):
         answer, answerT, answerLen, answerIdx, \
         questionL, negAnswer, negAnswerLen, negAnswerIdx = data
 
+        print('question_array size {}'.format(question_array.size()))
+        print('question_seg size {}'.format(question_segment.size()))
+        print('question_att size {}'.format(question_attention_array.size()))
+
+        print('history_arry size {}'.format(history_array.size()))
+        print('hist seg size {}'.format(history_segment.size()))
+        print('hist_att size {}'.format(history_attention_array.size()))
+
         batch_size = question_array.size(0)
         image = image.view(-1, img_feat_size)
         with torch.no_grad():
