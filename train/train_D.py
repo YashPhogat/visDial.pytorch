@@ -69,6 +69,8 @@ parser.add_argument('--ninp', type=int, default=300, help='size of word embeddin
 parser.add_argument('--nhid', type=int, default=512, help='humber of hidden units per layer')
 parser.add_argument('--nlayers', type=int, default=1, help='number of layers')
 parser.add_argument('--dropout', type=int, default=0.5, help='number of layers')
+parser.add_argument('--alpha_norm', type=float, default=0.1, help='Loss multiplier for scaling l2norm of embedding vectors')
+parser.add_argument('--pl_sigma', type=float, default=1., help='hyperparameter for scaling the pairwise score diff in logistic function')
 parser.add_argument('--clip', type=float, default=5, help='gradient clipping')
 parser.add_argument('--margin', type=float, default=2, help='number of epochs to train for')
 parser.add_argument('--log_interval', type=int, default=5, help='how many iterations show the log info')
@@ -158,7 +160,7 @@ img_feat_size = 512
 netE = _netE(opt.model, opt.ninp, opt.nhid, opt.nlayers, opt.dropout, img_feat_size)
 netW = model._netW(vocab_size, opt.ninp, opt.dropout)
 netD = model._netD(opt.model, opt.ninp, opt.nhid, opt.nlayers, vocab_size, opt.dropout)
-critD =model.nPairLoss(opt.ninp, opt.margin)
+critD =model.nPairLoss(opt.ninp, opt.margin, opt.alpha_norm, opt.pl_sigma)
 
 if opt.model_path != '': # load the pre-trained model.
     netW.load_state_dict(checkpoint['netW'])

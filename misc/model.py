@@ -137,10 +137,12 @@ class nPairLoss(nn.Module):
 
     Improved Deep Metric Learning with Multi-class N-pair Loss Objective (NIPS)
     """
-    def __init__(self, ninp, margin):
+    def __init__(self, ninp, margin, alpha_norm, pl_sigma):
         super(nPairLoss, self).__init__()
         self.ninp = ninp
         self.margin = np.log(margin)
+        self.alpha_norm = alpha_norm
+        self.pl_sigma = pl_sigma
 
     def forward(self, feat, right, wrong, batch_wrong, fake=None, fake_diff_mask=None):
 
@@ -152,22 +154,22 @@ class nPairLoss(nn.Module):
         wrong_dis = torch.bmm(wrong, feat)
         batch_wrong_dis = torch.bmm(batch_wrong, feat)
 
-        wrong_score = torch.sum(torch.exp(wrong_dis - right_dis.expand_as(wrong_dis)),1) \
-                + torch.sum(torch.exp(batch_wrong_dis - right_dis.expand_as(batch_wrong_dis)),1)
+        wrong_score = torch.sum(torch.exp(self.pl_sigma*(wrong_dis - right_dis.expand_as(wrong_dis))),1) \
+                + torch.sum(torch.exp(self.pl_sigma*(batch_wrong_dis - right_dis.expand_as(batch_wrong_dis))),1)
 
         loss_dis = torch.sum(torch.log(wrong_score + 1))
         loss_norm = right.norm() + feat.norm() + wrong.norm() + batch_wrong.norm()
 
         if fake:
             fake_dis = torch.bmm(fake.view(-1, 1, self.ninp), feat)
-            fake_score = torch.masked_select(torch.exp(fake_dis - right_dis), fake_diff_mask)
+            fake_score = torch.masked_select(torch.exp(self.pl_sigma*(fake_dis - right_dis)), fake_diff_mask)
 
             margin_score = F.relu(torch.log(fake_score + 1) - self.margin)
             loss_fake = torch.sum(margin_score)
             loss_dis += loss_fake
             loss_norm += fake.norm()
 
-        loss = (loss_dis + 0.1 * loss_norm) / batch_size
+        loss = (loss_dis + self.alpha_norm * loss_norm) / batch_size
         if fake:
             return loss, loss_fake.data[0] / batch_size
         else:
