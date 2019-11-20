@@ -75,6 +75,7 @@ parser.add_argument('--clip', type=float, default=5, help='gradient clipping')
 parser.add_argument('--margin', type=float, default=2, help='number of epochs to train for')
 parser.add_argument('--log_interval', type=int, default=5, help='how many iterations show the log info')
 parser.add_argument('--path_to_home',type=str)
+parser.add_argument('--exp_name', type=str, help='name of the expemriment')
 
 opt = parser.parse_args()
 print(opt)
@@ -121,7 +122,7 @@ else:
     # create new folder.
     t = datetime.datetime.now()
     cur_time = '%s-%s-%s' %(t.day, t.month, t.hour)
-    save_path = os.path.join(opt.outf, opt.decoder + '.' + cur_time)
+    save_path = os.path.join(opt.outf, opt.exp_name, opt.decoder + '.' + cur_time)
     opt.save_path = save_path
     try:
         os.makedirs(save_path)
