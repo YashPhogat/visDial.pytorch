@@ -166,11 +166,14 @@ class nPairLoss(nn.Module):
         rank = rank.reshape(batch_size, total_ans)
 
         score_diff = combined[:,:1] - combined[:,1:].view(batch_size,total_ans-1)
-        exped = score_diff.exp()
+        score_diff_scaled = self.pl_sigma*score_diff
+
+        scaled_exp = score_diff_scaled.exp()
+
         mrr_dif = 1/rank[:,:1].float() - 1/rank[:,1:].view(batch_size,total_ans-1).float()
 
         # lamb updates
-        lamb_updates = (-self.pl_sigma/(1 + self.pl_sigma*exped)) * mrr_dif.abs()
+        lamb_updates = (-self.pl_sigma/(1 + scaled_exp)) * mrr_dif.abs()
         lambs1 = lamb_updates.sum(dim=1, keepdim=True)
         lambs_rest = -1*lamb_updates
         lambs = torch.cat((lambs1,lambs_rest),dim=1)
@@ -180,8 +183,8 @@ class nPairLoss(nn.Module):
         wrong_dis = combined[:,1:negative_samples+1]
         batch_wrong_dis = combined[:,negative_samples+1:]
 
-        wrong_score = self.pl_sigma*(torch.sum(torch.exp(wrong_dis - right_dis.expand_as(wrong_dis)), 1) \
-                      + torch.sum(torch.exp(batch_wrong_dis - right_dis.expand_as(batch_wrong_dis)), 1))
+        wrong_score = torch.sum(torch.exp(self.pl_sigma*(wrong_dis - right_dis.expand_as(wrong_dis))), 1) \
+                      + torch.sum(torch.exp(self.pl_sigma*(batch_wrong_dis - right_dis.expand_as(batch_wrong_dis))), 1)
 
         loss_dis = torch.sum(torch.log(wrong_score + 1))
 
