@@ -46,10 +46,7 @@ print(opt)
 sys.path.insert(1, opt.path_to_home)
 
 # json output path
-pth = os.path.split(opt.model_path)
-tail = pth[1]
-tail2 = tail[:-4]
-json_path = tail2+'.json'
+json_path = opt.model_path[:-4]+'_qual.json'
 print('output will be dumped to: '+ json_path )
 
 if(opt.model_path==''):
