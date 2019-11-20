@@ -48,7 +48,7 @@ parser.add_argument('--num_val', default=1000, help='number of image split out a
 parser.add_argument('--niter', type=int, default=50, help='number of epochs to train for')
 parser.add_argument('--negative_sample', type=int, default=20, help='folder to output images and model checkpoints')
 parser.add_argument('--neg_batch_sample', type=int, default=30, help='folder to output images and model checkpoints')
-parser.add_argument('--start_epoch', type=int, default=1, help='start of epochs to train for')
+parser.add_argument('--start_epoch', type=int, default=0, help='start of epochs to train for')
 parser.add_argument('--teacher_forcing', type=int, default=1, help='start of epochs to train for')
 
 parser.add_argument('--workers', type=int, help='number of data loading workers', default=6)
@@ -141,7 +141,7 @@ dataset_val = dl.validate(input_img_h5=opt.input_img_h5, input_ques_h5=opt.input
                 num_val = opt.num_val, data_split = 'val')
 
 dataloader = torch.utils.data.DataLoader(dataset, batch_size=opt.batchSize,
-                                         shuffle=True, num_workers=int(opt.workers))
+                                         shuffle=False, num_workers=int(opt.workers))
 
 dataloader_val = torch.utils.data.DataLoader(dataset_val, batch_size=1,
                                          shuffle=False, num_workers=int(opt.workers))
@@ -193,7 +193,9 @@ def train(epoch):
     count = 0
     i = 0
 
-    while i < len(dataloader):
+    # size of data to work on
+    dataloader_size = 80
+    while i < dataloader_size: #len(dataloader):
 
         t1 = time.time()
         data = data_iter.next()
