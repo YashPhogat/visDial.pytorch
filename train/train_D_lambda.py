@@ -59,7 +59,7 @@ parser.add_argument('--teacher_forcing', type=int, default=1, help='start of epo
 
 parser.add_argument('--workers', type=int, help='number of data loading workers', default=6)
 parser.add_argument('--batchSize', type=int, default=128, help='input batch size')
-parser.add_argument('--save_iter', type=int, default=5, help='number of epochs to train for')
+parser.add_argument('--save_iter', type=int, default=1, help='number of epochs to train for')
 
 parser.add_argument('--adam', action='store_true', help='Whether to use adam (default is rmsprop)')
 parser.add_argument('--lr', type=float, default=0.0004, help='learning rate for, default=0.00005')
