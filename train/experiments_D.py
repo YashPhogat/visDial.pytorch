@@ -21,5 +21,5 @@ alphas = [0.2]
 val = 10
 for sigma in sigmas:
     for alpha in alphas:
-        os.system("python train_D.py --cuda --path_to_home '"+ path_to_home + "' --niter 5 --num_val 10 --early_stop " + str(early_stop_train) + " --pl_sigma " +str(sigma) + " --alpha_norm "+str(alpha) +" --exp_name 'rank_sig_{}_alpha_{}'".format(sigma,alpha))
+        os.system("python train_D.py --cuda --path_to_home '"+ path_to_home + "' --niter 5 --num_val 10 --early_stop " + str(early_stop_train) + " --pl_sigma " +str(sigma) + " --alpha_norm "+str(alpha) +" --exp_name 'rank_sig_{}_alpha_{}'".format(sigma,alpha)+" --outf ./save_lambda_exp")
         os.system("python ../eval/eval_D.py --cuda --path_to_home '"+ path_to_home + "' --early_stop " + str(early_stop_val) + " --model_path '../train/save/rank_sig_{}_alpha_{}/epoch_5.pth'".format(sigma,alpha))
