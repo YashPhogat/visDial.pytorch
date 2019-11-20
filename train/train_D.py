@@ -452,9 +452,10 @@ for epoch in range(opt.start_epoch+1, opt.niter):
     print ('%d/%d: mrr: %f R1: %f R5 %f R10 %f Mean %f' %(epoch, len(dataloader_val), mrr, R1, R5, R10, ave))
     val_his = {'R1': R1, 'R5':R5, 'R10': R10, 'Mean':ave, 'mrr':mrr}
     history.append({'epoch':epoch, 'train': train_his, 'val': val_his})
-
+    print('Epoch No: {}'.format(epoch))
     # saving the model.
     if epoch % opt.save_iter == 0:
+        print('Saving model for epoch: {}'.format(epoch))
         torch.save({'epoch': epoch,
                     'opt': opt,
                     'netW': netW.state_dict(),
