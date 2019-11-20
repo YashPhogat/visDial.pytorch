@@ -38,6 +38,7 @@ parser.add_argument('--model_path', default='', help='folder to output images an
 parser.add_argument('--cuda', action='store_true', help='enables cuda')
 parser.add_argument('--log_iter', type=int, default=1)
 parser.add_argument('--path_to_home',type=str)
+parser.add_argument('--early_stop', type=int, default='1000000', help='datapoints to consider')
 
 opt = parser.parse_args()
 sys.path.insert(1, opt.path_to_home)
@@ -125,7 +126,7 @@ netE = _netE(opt.model, opt.ninp, opt.nhid, opt.nlayers, opt.dropout, img_feat_s
 
 netW = model._netW(n_words, opt.ninp, opt.dropout)
 netD = model._netD(opt.model, opt.ninp, opt.nhid, opt.nlayers, n_words, opt.dropout)
-critD = model.nPairLoss(opt.nhid, 2)
+critD = model.nPairLoss(opt.nhid, 2, opt.alpha_norm, opt.pl_sigma)
 
 
 netW.load_state_dict(checkpoint['netW'])
@@ -158,7 +159,11 @@ def eval():
     rank_all_tmp = []
     result_all = []
     img_atten = torch.FloatTensor(100 * 30, 10, 7, 7)
-    while i < len(dataloader_val):#len(1000):
+
+    early_stop = int(opt.early_stop / opt.batchSize)
+    dataloader_size = min(len(dataloader_val), early_stop)
+
+    while i < dataloader_size:#len(1000):
         data = data_iter_val.next()
         image, history, question, answer, answerT, questionL, opt_answer, \
                 opt_answerT, answer_ids, answerLen, opt_answerLen, img_id  = data
@@ -323,5 +328,5 @@ ave = np.sum(np.array(rank_all)) / float(len(rank_all))
 mrr = np.sum(1/(np.array(rank_all, dtype='float'))) / float(len(rank_all))
 logger.warning('Final result: ')
 logger.warning('%d/%d: mrr: %f R1: %f R5 %f R10 %f Mean %f' %(1, len(dataloader_val), mrr, R1, R5, R10, ave))
-print(result_all)
+# print(result_all)
 json.dump(result_all, open(json_path, 'w'))

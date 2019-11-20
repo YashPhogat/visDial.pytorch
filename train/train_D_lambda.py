@@ -81,6 +81,8 @@ parser.add_argument('--pl_sigma', type=float, default=1., help='hyperparameter f
 parser.add_argument('--margin', type=float, default=2, help='number of epochs to train for')
 parser.add_argument('--log_interval', type=int, default=5, help='how many iterations show the log info')
 parser.add_argument('--path_to_home',type=str)
+parser.add_argument('--exp_name', type=str, help='name of the expemriment')
+parser.add_argument('--early_stop', type=int, default='1000000', help='datapoints to consider')
 
 opt = parser.parse_args()
 print(opt)
@@ -125,8 +127,8 @@ if opt.model_path != '':
 else:
     # create new folder.
     t = datetime.datetime.now()
-    cur_time = '%s-%s-%s' % (t.day, t.month, t.hour)
-    save_path = os.path.join(opt.outf, opt.decoder + '.' + cur_time)
+    # cur_time = '%s-%s-%s' % (t.day, t.month, t.hour)
+    save_path = os.path.join(opt.outf, opt.exp_name)
     opt.save_path = save_path
     try:
         os.makedirs(save_path)
@@ -200,7 +202,8 @@ def train(epoch):
     i = 0
 
     # size of data to work on
-    dataloader_size = 80
+    early_stop = int(opt.early_stop/opt.batchSize)
+    dataloader_size = min(len(dataloader),early_stop)
     while i < dataloader_size: # len(dataloader):
 
         t1 = time.time()
