@@ -92,9 +92,10 @@ from misc.utils import repackage_hidden_new, clip_gradient, adjust_learning_rate
     decode_txt, sample_batch_neg, l2_norm
 import misc.dataLoader as dl
 import misc.model as model
-from misc.encoder_QIH import _netE
+from misc.encoder_QIH_new_architecture import _netE
 from misc.netG import _netG
 import datetime
+from script.test_data import check_data
 
 opt.manualSeed = random.randint(1, 10000)  # fix seed
 print("Random Seed: ", opt.manualSeed)
@@ -105,6 +106,13 @@ np.random.seed(opt.manualSeed)
 if opt.cuda:
     torch.cuda.manual_seed(opt.manualSeed)
 cudnn.benchmark = True
+
+# ---------------------- check for data correctnes -------------------------------------
+if check_data()==False:
+    print("data is not up-to-date")
+    exit(255)
+
+# ---------------------- -------------------------------------------------------
 
 if torch.cuda.is_available() and not opt.cuda:
     print("WARNING: You have a CUDA device, so you should probably run with --cuda")
@@ -136,21 +144,21 @@ img_feat_size = 512
 
 print('init Generative model...')
 netG = _netG(opt.model, vocab_size, opt.ninp, opt.nhid, opt.nlayers, opt.dropout, False)
-netE_g = _netE(opt.model, opt.ninp, opt.nhid, opt.nlayers, opt.dropout, img_feat_size)
-netW_g = model._netW(vocab_size, opt.ninp, opt.dropout)
+netE = _netE(opt.model, opt.ninp, opt.nhid, opt.nlayers, opt.dropout, img_feat_size)
+netW = model._netW(vocab_size, opt.ninp, opt.dropout)
 sampler = model.gumbel_sampler()
 critG = model.G_loss(opt.ninp)
 critLM = model.LMCriterion()
 
 if True:  # opt.model_path_D != '' and opt.model_path_G != '':
     print('Loading Generative model...')
-    netW_g.load_state_dict(checkpoint['netW'])
-    netE_g.load_state_dict(checkpoint['netE'])
+    netW.load_state_dict(checkpoint['netW'])
+    netE.load_state_dict(checkpoint['netE'])
     netG.load_state_dict(checkpoint['netG'])
 
 if opt.cuda:  # ship to cuda, if has GPU
-    netW_g.cuda()
-    netE_g.cuda()
+    netW.cuda()
+    netE.cuda()
     netG.cuda()
     critG.cuda()
     sampler.cuda(), critLM.cuda()
@@ -161,17 +169,19 @@ if opt.cuda:  # ship to cuda, if has GPU
 ####################################################################################
 
 def val():
-    netE_g.eval()
-    netW_g.eval()
+    netE.eval()
+    netW.eval()
     netG.eval()
 
     n_neg = 100
-    ques_hidden1 = netE_g.init_hidden(opt.batchSize)
-
-    hist_hidden1 = netE_g.init_hidden(opt.batchSize)
+    # ques_hidden1 = netE_g.init_hidden(opt.batchSize)
+    #
+    # hist_hidden1 = netE_g.init_hidden(opt.batchSize)
 
     bar = progressbar.ProgressBar(max_value=len(dataloader_val))
     data_iter_val = iter(dataloader_val)
+    mapped_h_mem = netE.init_hidden(opt.batchSize)
+    hist_hidden = netE.init_hidden(opt.batchSize)
 
     count = 0
     i = 0
@@ -215,19 +225,18 @@ def val():
             gt_index = torch.LongTensor(gt_id.size())
             gt_index.copy_(gt_id)
 
-            ques_emb_g = netW_g(ques_input, format='index')
-            his_emb_g = netW_g(his_input, format='index')
+            ques_emb_g = netW(ques_input, format='index')
+            his_emb_g = netW(his_input, format='index')
 
-            ques_hidden1 = repackage_hidden_new(ques_hidden1, batch_size)
+            mapped_h_mem = repackage_hidden_new(mapped_h_mem, batch_size)
+            hist_hidden = repackage_hidden_new(hist_hidden, his_input.size(1))
 
-            hist_hidden1 = repackage_hidden_new(hist_hidden1, his_emb_g.size(1))
-
-            featG, ques_hidden1 = netE_g(ques_emb_g, his_emb_g, img_input, \
-                                         ques_hidden1, hist_hidden1, rnd + 1)
+            encoder_feat, mapped_h_mem = netE(ques_emb_g, his_emb_g, img_input, \
+                                         mapped_h_mem, hist_hidden, rnd + 1)
 
             # featD = l2_norm(featD)
             # Evaluate the Generator:
-            _, ques_hidden1 = netG(featG.view(1, -1, opt.ninp), ques_hidden1)
+            # _, ques_hidden1 = netG(featG.view(1, -1, opt.ninp), ques_hidden1)
             # _, ques_hidden = netG(encoder_feat.view(1,-1,opt.ninp), ques_hidden)
             # extend the hidden
             sample_ans_input = torch.LongTensor(1, opt.batchSize).cuda()
@@ -235,7 +244,7 @@ def val():
 
             sample_opt = {'beam_size': 1}
 
-            seq, seqLogprobs = netG.sample(netW_g, sample_ans_input, ques_hidden1, sample_opt)
+            seq, seqLogprobs = netG.sample(netW, sample_ans_input, mapped_h_mem, sample_opt)
             ans_sample_txt = decode_txt(itow, seq.t())
             ans_txt = decode_txt(itow, tans)
             ques_txt = decode_txt(itow, questionL[:, rnd, :].t())
@@ -347,4 +356,4 @@ epoch = 0
 print('Evaluating ... ')
 result_all = val()
 
-json.dump(result_all, open('Per_greedy_new.json', 'w'))
+json.dump(result_all, open('arch_change_dialogs.json', 'w'))
