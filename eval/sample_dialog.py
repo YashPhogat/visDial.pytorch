@@ -131,6 +131,10 @@ his_length = dataset_val.ans_length + dataset_val.ques_length
 itow = dataset_val.itow
 img_feat_size = 512
 
+print('#------------------------------------------------------------------#')
+print('#                   working on old data                            #')
+print('#------------------------------------------------------------------#')
+
 print('init Generative model...')
 netG = _netG(opt.model, vocab_size, opt.ninp, opt.nhid, opt.nlayers, opt.dropout, False)
 netE_g = _netE(opt.model, opt.ninp, opt.nhid, opt.nlayers, opt.dropout, img_feat_size)
