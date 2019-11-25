@@ -87,6 +87,7 @@ input_img_h5 = opt.input_img_h5
 input_ques_h5 = opt.input_ques_h5
 input_json = opt.input_json
 early_stop = opt.early_stop
+evalall = opt.evalall
 opt = checkpoint['opt']
 opt.start_epoch = checkpoint['epoch']
 opt.batchSize = 5
@@ -96,6 +97,7 @@ opt.input_img_h5 = input_img_h5
 opt.input_ques_h5 = input_ques_h5
 opt.input_json = input_json
 opt.early_stop = early_stop
+opt.evalall = evalall
 
 logger = get_eval_logger(os.path.splitext(os.path.basename(__file__))[0], opt.model_path)
 
