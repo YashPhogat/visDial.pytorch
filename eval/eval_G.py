@@ -279,7 +279,7 @@ def eval():
                 data_dict = {}
                 data_dict['ques'] = ques_txt[b]
                 data_dict['gt_ans'] = ans_txt[b]
-                data_dict['top10_ans'] = np.array(ans_list[b * 10:(b + 1) * 10], dtype=str).T
+                data_dict['top10_ans'] = ans_list[b * 10:(b + 1) * 10]
                 data_dict['rnd'] = rnd
                 data_dict['image_id'] = img_id[b].item()
                 data_dict['gt_ans_rank'] = str(gt_rank_cpu[b])
