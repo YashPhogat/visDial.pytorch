@@ -278,7 +278,7 @@ def eval():
             for b in range(batch_size):
                 data_dict = {}
                 data_dict['ques'] = ques_txt[b]
-                data_dict['gt_ans'] = ans_txt[b]
+                data_dict['gt_ans'] = ans_txt[gt_index[b]]
                 data_dict['top10_ans'] = ans_list[b * 10:(b + 1) * 10]
                 data_dict['rnd'] = rnd
                 data_dict['image_id'] = img_id[b].item()
