@@ -139,7 +139,8 @@ class nPairLoss(nn.Module):
 
     Improved Deep Metric Learning with Multi-class N-pair Loss Objective (NIPS)
     """
-    def __init__(self, ninp, margin, alpha_norm=0.1, sigma=1.0, alphaC = 2.0, alphaE = 0.1, alphaN = 1.0, debug = False, log_iter=5):
+    def __init__(self, ninp, margin, alpha_norm=0.1, sigma=1.0, alphaC = 2.0, alphaE = 0.1, alphaN = 1.0,
+                 debug = False, log_iter=5, contra_thresh = 0.333):
         super(nPairLoss, self).__init__()
         self.ninp = ninp
         self.margin = np.log(margin)
@@ -151,20 +152,29 @@ class nPairLoss(nn.Module):
         self.debug = debug
         self.iter = 0
         self.log_iter = log_iter
+        self.contra_thresh = contra_thresh
 
     def forward(self, feat, right, wrong, probs, fake=None, fake_diff_mask=None):
         np.set_printoptions(precision=4)
         num_wrong = wrong.size(1)
         batch_size = feat.size(0)
 
+        smooth_dist_summary = torch.sum(torch.sum(probs, dim=1), dim=0)
+
         feat = feat.view(-1, self.ninp, 1)
         right_dis = torch.bmm(right.view(-1, 1, self.ninp), feat)
         wrong_dis = torch.bmm(wrong, feat)
 
-        max_ind = probs.argmax(dim=2)
-        one_hot_probs = torch.nn.functional.one_hot(max_ind, 3).double()
+        thresh_mask = torch.gt(probs, self.contra_thresh)
+        contra_mask = torch.BoolTensor(probs.size())
+        contra_mask[:, :, :] = False
+        contra_mask[:, :, 0] = True
 
-        smooth_dist_summary = torch.sum(torch.sum(probs, dim=1), dim=0)
+        decrease_contra_mask = contra_mask*torch.logical_not(thresh_mask)
+
+        probs[decrease_contra_mask] = 0.
+        one_hot_probs = torch.nn.functional.one_hot(probs.argmax(dim=2), 3).double()
+
         dist_summary = torch.sum(torch.sum(one_hot_probs, dim=1), dim=0)
 
         pair_wise_score_diff = torch.squeeze(right_dis.expand_as(wrong_dis) - wrong_dis)

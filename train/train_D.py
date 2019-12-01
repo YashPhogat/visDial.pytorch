@@ -64,6 +64,7 @@ parser.add_argument('--sigma', type=float, default=1.0)
 parser.add_argument('--alphaC', type=float, default=2.0)
 parser.add_argument('--alphaE', type=float, default=0.1)
 parser.add_argument('--alphaN', type=float, default=1.0)
+parser.add_argument('--contra_thresh', type=float, default=0.333, help='contradiction threshold for logician')
 parser.add_argument('--cuda'  , action='store_true', help='enables cuda')
 parser.add_argument('--debug', action='store_true', help='prints stuff in debug mode')
 parser.add_argument('--sample_dist', action='store_true', help='Used for seeing distribution of C,E,N in samples')
@@ -172,7 +173,7 @@ img_feat_size = 512
 netE = _netE(opt.model, opt.ninp, opt.nhid, opt.nlayers, opt.dropout, img_feat_size)
 netW = model._netW(vocab_size, opt.ninp, opt.dropout)
 netD = model._netD(opt.model, opt.ninp, opt.nhid, opt.nlayers, vocab_size, opt.dropout)
-critD =model.nPairLoss(opt.ninp, opt.margin, opt.alpha_norm, opt.sigma, opt.alphaC, opt.alphaE, opt.alphaN, opt.debug, opt.log_interval)
+critD =model.nPairLoss(opt.ninp, opt.margin, opt.alpha_norm, opt.sigma, opt.alphaC, opt.alphaE, opt.alphaN, opt.debug, opt.log_interval, opt.contra_thresh)
 
 if opt.model_path != '': # load the pre-trained model.
     netW.load_state_dict(checkpoint['netW'])
