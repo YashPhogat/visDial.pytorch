@@ -166,7 +166,7 @@ class nPairLoss(nn.Module):
         wrong_dis = torch.bmm(wrong, feat)
 
         thresh_mask = torch.gt(probs, self.contra_thresh)
-        contra_mask = torch.BoolTensor(probs.size())
+        contra_mask = torch.BoolTensor(probs.size()).cuda()
         contra_mask[:, :, :] = False
         contra_mask[:, :, 0] = True
 
