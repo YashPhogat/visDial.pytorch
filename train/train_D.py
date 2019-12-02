@@ -197,8 +197,7 @@ def train(epoch):
     ques_hidden = netE.init_hidden(opt.batchSize)
     hist_hidden = netE.init_hidden(opt.batchSize)
 
-    real_hidden = netD.init_hidden(opt.batchSize)
-    wrong_hidden = netD.init_hidden(opt.batchSize)
+    sampled_hidden = netD.init_hidden(opt.batchSize)
 
     data_iter = iter(dataloader)
 
@@ -215,8 +214,8 @@ def train(epoch):
 
         t1 = time.time()
         data = data_iter.next()
-        image, history, question, answer, answerT, answerLen, answerIdx, questionL, \
-                                    opt_answerT, opt_answerLen, opt_answerIdx, opt_selected_probs = data
+        image, history, question, questionL, \
+                                    opt_answerT, opt_answerLen, num_individual = data
 
         batch_size = question.size(0)
         image = image.view(-1, img_feat_size)
@@ -232,13 +231,9 @@ def train(epoch):
             ques = question[:,rnd,:].t()
             his = history[:,:rnd+1,:].clone().view(-1, his_length).t()
 
-            ans = answer[:,rnd,:].t()
-            tans = answerT[:,rnd,:].t()
-            wrong_ans = opt_answerT[:,rnd,:].clone().view(-1, ans_length).t()
-            opt_selected_probs_for_rnd = opt_selected_probs[:, rnd, :, :]
-
-            real_len = answerLen[:,rnd]
-            wrong_len = opt_answerLen[:,rnd,:].clone().view(-1)
+            sampled_ans = opt_answerT[:,rnd,:].clone().view(-1, ans_length).t()
+            sampled_ans_len = opt_answerLen[:,rnd,:].clone().view(-1)
+            num_ind_rnd = num_individual[:,rnd,:]
 
             ques_input = torch.LongTensor(ques.size()).cuda()
             ques_input.copy_(ques)
@@ -246,17 +241,8 @@ def train(epoch):
             his_input = torch.LongTensor(his.size()).cuda()
             his_input.copy_(his)
 
-            ans_input = torch.LongTensor(ans.size()).cuda()
-            ans_input.copy_(ans)
-
-            ans_target = torch.LongTensor(tans.size()).cuda()
-            ans_target.copy_(tans)
-
-            wrong_ans_input = torch.LongTensor(wrong_ans.size()).cuda()
-            wrong_ans_input.copy_(wrong_ans)
-
-            opt_selected_probs_for_rnd_input = torch.FloatTensor(opt_selected_probs_for_rnd.size()).cuda()
-            opt_selected_probs_for_rnd_input.copy_(opt_selected_probs_for_rnd)
+            sampled_ans_input = torch.LongTensor(sampled_ans.size()).cpu()
+            sampled_ans_input.copy_(sampled_ans)
 
             # # sample in-batch negative index
             # batch_sample_idx = torch.zeros(batch_size, opt.neg_batch_sample, dtype=torch.long).cuda()
@@ -271,21 +257,18 @@ def train(epoch):
             featD, ques_hidden = netE(ques_emb, his_emb, img_input, \
                                                 ques_hidden, hist_hidden, rnd+1)
 
-            ans_real_emb = netW(ans_target, format='index')
-            ans_wrong_emb = netW(wrong_ans_input, format='index')
+            sampled_ans_emb = netW(sampled_ans_input, format='index')
 
-            real_hidden = repackage_hidden_new(real_hidden, batch_size)
-            wrong_hidden = repackage_hidden_new(wrong_hidden, ans_wrong_emb.size(1))
+            sampled_hidden = repackage_hidden_new(sampled_hidden, sampled_ans_emb.size(1))
 
-            real_feat = netD(ans_real_emb, ans_target, real_hidden, vocab_size)
-            wrong_feat = netD(ans_wrong_emb, wrong_ans_input, wrong_hidden, vocab_size)
+            sampled_ans_feat = netD(sampled_ans_emb, sampled_ans_input, sampled_hidden, vocab_size)
 
             # batch_wrong_feat = wrong_feat.index_select(0, batch_sample_idx.view(-1))
-            wrong_feat = wrong_feat.view(batch_size, -1, opt.ninp)
+            sampled_ans_feat = sampled_ans_feat.view(batch_size, -1, opt.ninp)
             # batch_wrong_feat = batch_wrong_feat.view(batch_size, -1, opt.ninp)
 
             nPairLoss, dist_summary, smooth_dist_summary = \
-                critD(featD, real_feat, wrong_feat, opt_selected_probs_for_rnd_input)
+                critD(featD, sampled_ans_feat, num_ind_rnd)
 
             average_loss += nPairLoss.data.item()
             avg_dist_summary += dist_summary.cpu().detach().numpy()

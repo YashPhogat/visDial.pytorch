@@ -143,6 +143,7 @@ class train(data.Dataset) :  # torch wrapper
         opt_ans_idx = np.zeros((self.total_qa_pairs, self.total_sample))
         opt_selected_probs = np.zeros((self.total_qa_pairs, self.total_sample, 3))
 
+        num_individual = np.zeros((self.total_qa_pairs,3), dtype=np.int32)
         for i in range(self.total_qa_pairs) :
             # get the index
             q_len = self.ques_len[index, i]
@@ -168,6 +169,10 @@ class train(data.Dataset) :  # torch wrapper
             num_entail = min(self.sample_each, total_num_entail)
             num_neutra = self.total_sample - num_contra - num_entail
 
+            num_individual[i,0] = num_contra
+            num_individual[i,1] = num_entail
+            num_individual[i,2] = num_neutra
+
             contra_list = tag_indices[:total_num_contra]
             random.shuffle(contra_list)
             entail_list = tag_indices[total_num_contra:total_num_contra+total_num_entail]
@@ -175,26 +180,20 @@ class train(data.Dataset) :  # torch wrapper
             neutra_list = tag_indices[-total_num_neutra:]
             random.shuffle(neutra_list)
 
+            opt_ids_temp = self.opt_ids[index, i]
+            opt_ids = []
+            for j in range(num_contra):
+                opt_ids.append(opt_ids_temp[contra_list[j]])
+            for j in range(num_entail):
+                opt_ids.append(opt_ids_temp[entail_list[j]])
+            for j in range(num_neutra):
+                opt_ids.append(opt_ids_temp[neutra_list[j]])
 
             ########################################################################
-            opt_ids = self.opt_ids[index, i]  # since python start from 0
-            opt_original_ranks = [i for i in  range(len(opt_ids))]
 
-            opt_probs = self.opt_probs[index, i]
-            # random select the negative samples.
-            ans_idx[i] = opt_ids[self.ans_ids[index, i]]
-            # exclude the gt index.
-            opt_ids = np.delete(opt_ids, self.ans_ids[index, i], 0)
-            opt_original_ranks = np.delete(opt_original_ranks, self.ans_ids[index, i], 0)
-
-            id_rank_combined = list(zip(opt_ids, opt_original_ranks))
-
-            random.shuffle(id_rank_combined)
-            opt_ids, opt_original_ranks = zip(*id_rank_combined)
             for j in range(self.total_sample) :
                 ids = opt_ids[j]
                 opt_ans_idx[i, j] = ids
-                opt_selected_probs[i, j, :] = opt_probs[opt_original_ranks[j], :]
 
                 opt_len = self.opt_len[ids]
 
@@ -211,10 +210,10 @@ class train(data.Dataset) :  # torch wrapper
         opt_ans_len = torch.from_numpy(opt_ans_len)
         opt_ans_vocab_first = torch.from_numpy(opt_ans_vocab_first)
 
-
+        num_individual = torch.from_numpy(num_individual)
 
         return img, his, ques, ques_trailing_zeros, \
-               opt_ans_vocab_first, opt_ans_len, opt_selected_probs
+               opt_ans_vocab_first, opt_ans_len, num_individual
 
     def __len__(self) :
         return self.ques.shape[0]
