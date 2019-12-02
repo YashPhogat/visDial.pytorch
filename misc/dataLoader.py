@@ -185,13 +185,16 @@ class train(data.Dataset) :  # torch wrapper
             entail_list[0] = self.ans_ids[index,i]
             opt_ids_temp = self.opt_ids[index, i]
             opt_ids = []
-            for j in range(num_contra):
-                opt_ids.append(opt_ids_temp[contra_list[j]])
-            for j in range(num_entail):
-                opt_ids.append(opt_ids_temp[entail_list[j]])
-            for j in range(num_neutra):
-                opt_ids.append(opt_ids_temp[neutra_list[j]])
-
+            try:
+                for j in range(num_contra):
+                    opt_ids.append(opt_ids_temp[contra_list[j]])
+                for j in range(num_entail):
+                    opt_ids.append(opt_ids_temp[entail_list[j]])
+                for j in range(num_neutra):
+                    opt_ids.append(opt_ids_temp[neutra_list[j]])
+            except:
+                print('total contra {}, total entail {} total neutra {} \n num contra {}, num enatail {}, num neutra {}'.format(total_num_contra, total_num_entail, total_num_neutra, num_contra, num_entail, num_neutra))
+                exit(255)
             ########################################################################
 
             for j in range(self.total_sample) :
