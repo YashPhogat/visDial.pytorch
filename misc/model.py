@@ -150,8 +150,7 @@ class nPairLoss(nn.Module):
         self.iter = 0
         self.log_iter = log_iter
 
-    def forward(self, feat, right, wrong, sampled_ans, num_individual, fake=None, fake_diff_mask=None):
-        num_wrong = wrong.size(1)
+    def forward(self, feat, sampled_ans, num_individual, fake=None, fake_diff_mask=None):
         batch_size = feat.size(0)
 
         mask_for_samples = num_individual.lt(5)
