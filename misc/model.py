@@ -221,9 +221,9 @@ class nPairLoss(nn.Module):
                 # print(smooth_dist_summary.cpu().detach().numpy())
                 # pause()
 
-        loss = torch.log(1/1+torch.exp(-self.sigma*pair_wise_score_diff_ec)) + \
-               torch.log(1/1+torch.exp(-self.sigma*pair_wise_score_diff_en)) + \
-               torch.log(1/1+torch.exp(-self.sigma*pair_wise_score_diff_nc))
+        loss = torch.log(1/(1+torch.exp(-self.sigma*pair_wise_score_diff_ec))) + \
+               torch.log(1/(1+torch.exp(-self.sigma*pair_wise_score_diff_en))) + \
+               torch.log(1/(1+torch.exp(-self.sigma*pair_wise_score_diff_nc)))
         loss = torch.sum(loss)
         loss = -loss
         total_loss = loss + self.alpha_norm*norm_loss
