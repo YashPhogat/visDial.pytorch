@@ -139,7 +139,7 @@ class nPairLoss(nn.Module):
 
     Improved Deep Metric Learning with Multi-class N-pair Loss Objective (NIPS)
     """
-    def __init__(self, ninp, margin, alpha_norm=0.1, sigma=1.0, sample_each=5,
+    def __init__(self, ninp, margin, alpha_norm=0.1, sigma=1.0, sample_each_contra=10, sample_each_entail= 1, sample_each_neutra=10,
                  debug = False, log_iter=5):
         super(nPairLoss, self).__init__()
         self.ninp = ninp
@@ -149,32 +149,36 @@ class nPairLoss(nn.Module):
         self.debug = debug
         self.iter = 0
         self.log_iter = log_iter
-        self.sample_each = sample_each
+        self.sample_each_contra = sample_each_contra
+        self.sample_each_entail = sample_each_entail
+        self.sample_each_neutra = sample_each_neutra
 
     def forward(self, feat, sampled_ans, num_individual, fake=None, fake_diff_mask=None):
         batch_size = feat.size(0)
 
-        mask_for_samples = num_individual.lt(self.sample_each)
-        batch_level_ans_mask = torch.sum(mask_for_samples,dim=1)
+        mask_for_samples = num_individual[:,0].lt(self.sample_each_contra) + num_individual[:,1].lt(self.sample_each_entail) + num_individual[:,2].lt(self.sample_each_neutra)
 
-        batch_level_ans_mask = torch.logical_not(batch_level_ans_mask)
+        # batch_level_mask = torch.sum(mask_for_samples,dim=1)
+        batch_level_mask = mask_for_samples
+
+        batch_level_mask = torch.logical_not(batch_level_mask)
 
         # if torch.sum(batch_level_ans_mask)<sampled_ans.shape[0]:
         #     print('Daav thyo')
             # print(torch.sum(batch_level_ans_mask))
 
-        batch_level_ans_mask = batch_level_ans_mask.reshape(batch_size,1,1)
-        batch_level_feat_mask = batch_level_ans_mask.reshape(batch_size,1)
+        batch_level_ans_mask = batch_level_mask.reshape(batch_size,1,1)
+        batch_level_feat_mask = batch_level_mask.reshape(batch_size,1)
 
-        batch_size = torch.sum(batch_level_ans_mask)
+        batch_size = torch.sum(batch_level_mask)
         final_batch_level_ans_mask = batch_level_ans_mask.expand_as(sampled_ans)
 
         new_sampled_ans = torch.masked_select(sampled_ans,final_batch_level_ans_mask).reshape(batch_size,sampled_ans.shape[1],sampled_ans.shape[2])
 
         # batch_size = new_sampled_ans.shape[0]
-        contra_ans_emb = new_sampled_ans[:, 0: self.sample_each, :]
-        entail_ans_emb = new_sampled_ans[:, self.sample_each:2*self.sample_each, :]
-        neutra_ans_emb = new_sampled_ans[:, 2*self.sample_each:3*self.sample_each, :]
+        contra_ans_emb = new_sampled_ans[:, 0: self.sample_each_contra, :]
+        entail_ans_emb = new_sampled_ans[:, self.sample_each_contra:self.sample_each_contra+self.sample_each_entail, :]
+        neutra_ans_emb = new_sampled_ans[:, -self.sample_each_neutra:, :]
 
         final_batch_level_feat_mask = batch_level_feat_mask.expand_as(feat)
         feat = torch.masked_select(feat,final_batch_level_feat_mask).reshape(batch_size,feat.shape[1])
@@ -187,9 +191,9 @@ class nPairLoss(nn.Module):
         contra_scores_permute = contra_scores.permute(0,2,1)
         neutra_scores_permute = neutra_scores.permute(0,2,1)
 
-        pair_wise_score_diff_ec = entail_scores.expand(batch_size, self.sample_each, self.sample_each) - contra_scores_permute.expand(batch_size, self.sample_each, self.sample_each)
-        pair_wise_score_diff_en = entail_scores.expand(batch_size, self.sample_each, self.sample_each) - neutra_scores_permute.expand(batch_size, self.sample_each, self.sample_each)
-        pair_wise_score_diff_nc = neutra_scores.expand(batch_size, self.sample_each, self.sample_each) - contra_scores_permute.expand(batch_size, self.sample_each, self.sample_each)
+        pair_wise_score_diff_ec = entail_scores.expand(batch_size, self.sample_each_entail, self.sample_each_contra) - contra_scores_permute.expand(batch_size, self.sample_each_entail, self.sample_each_contra)
+        pair_wise_score_diff_en = entail_scores.expand(batch_size, self.sample_each_entail, self.sample_each_neutra) - neutra_scores_permute.expand(batch_size, self.sample_each_entail, self.sample_each_neutra)
+        pair_wise_score_diff_nc = neutra_scores.expand(batch_size, self.sample_each_neutra, self.sample_each_contra) - contra_scores_permute.expand(batch_size, self.sample_each_neutra, self.sample_each_contra)
 
         norm_loss = feat.norm() + new_sampled_ans.norm()
 
@@ -221,10 +225,10 @@ class nPairLoss(nn.Module):
                 # print(smooth_dist_summary.cpu().detach().numpy())
                 # pause()
 
-        loss = torch.log(1/(1+torch.exp(-self.sigma*pair_wise_score_diff_ec))) + \
-               torch.log(1/(1+torch.exp(-self.sigma*pair_wise_score_diff_en))) + \
-               torch.log(1/(1+torch.exp(-self.sigma*pair_wise_score_diff_nc)))
-        loss = torch.sum(loss)
+        loss = torch.sum(torch.log(1/(1+torch.exp(-self.sigma*pair_wise_score_diff_ec)))) + \
+               torch.sum(torch.log(1/(1+torch.exp(-self.sigma*pair_wise_score_diff_en)))) + \
+               torch.sum(torch.log(1/(1+torch.exp(-self.sigma*pair_wise_score_diff_nc))))
+
         loss = -loss
         # print('loss---->{} | norm_loss--->{}'.format(loss.data.item()/batch_size.data.item(),norm_loss.data.item()/batch_size.data.item()))
         total_loss = loss + self.alpha_norm*norm_loss

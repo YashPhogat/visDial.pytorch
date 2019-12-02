@@ -13,14 +13,16 @@ from misc.utils import repackage_hidden, clip_gradient, adjust_learning_rate, de
 
 class train(data.Dataset) :  # torch wrapper
     def __init__(self, input_img_h5, input_ques_h5, input_json, num_val, data_split,
-                 input_probs='../script/data/visdial_data_prob.h5',entail_thers = 0.5, contra_thres = 0.9, sample_each = 5) :
+                 input_probs='../script/data/visdial_data_prob.h5',entail_thers = 0.5, contra_thres = 0.9, sample_each_contra = 10, sample_each_entail = 1, sample_each_neutra = 10) :
         #This is the number of images for which we have copied the new vgg features to the parallely
         #accessible h5 file. DO NOT CHANGE THIS!!!
         self.TOTAL_VALID_IMAGES = 8000
         self.entail_thres = entail_thers
         self.contra_thres = contra_thres
-        self.sample_each = sample_each
-        self.total_sample = 3*self.sample_each
+        self.sample_each_contra = sample_each_contra
+        self.sample_each_entail = sample_each_entail
+        self.sample_each_neutra = sample_each_neutra
+        self.total_sample = self.sample_each_contra + self.sample_each_entail + self.sample_each_neutra
         print(h5py.version.info)
         print('DataLoader loading: %s' % data_split)
         print('Loading image feature from %s' % input_img_h5)
@@ -165,8 +167,8 @@ class train(data.Dataset) :  # torch wrapper
             total_num_contra = self.tag_frequency[index,i,0]
             total_num_entail = self.tag_frequency[index, i, 1]
             total_num_neutra = self.tag_frequency[index, i, 2]
-            num_contra = min(self.sample_each, total_num_contra)
-            num_entail = min(self.sample_each, total_num_entail)
+            num_contra = min(self.sample_each_contra, total_num_contra)
+            num_entail = min(self.sample_each_entail, total_num_entail)
             num_neutra = self.total_sample - num_contra - num_entail
 
             num_individual[i,0] = num_contra
@@ -204,7 +206,6 @@ class train(data.Dataset) :  # torch wrapper
 
         his = torch.from_numpy(his)
         ques = torch.from_numpy(ques)
-
 
         ques_trailing_zeros = torch.from_numpy(ques_trailing_zeros)
 

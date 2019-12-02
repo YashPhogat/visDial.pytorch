@@ -86,7 +86,9 @@ parser.add_argument('--exp_name', type=str, help='name of the expemriment')
 parser.add_argument('--early_stop', type=int, default='1000000', help='datapoints to consider')
 parser.add_argument('--entail_thres', type=float, default=0.5, help='threshold probability to consider as Entailment to GT')
 parser.add_argument('--contra_thres', type=float, default=0.9, help='threshold probability to consider as contradiction to GT')
-parser.add_argument('--sample_each', type=int, default='5', help='samples to take from each classess ENC')
+parser.add_argument('--sample_each_entail', type=int, default='1', help='samples to take from each classess E')
+parser.add_argument('--sample_each_neutra', type=int, default='10', help='samples to take from each classess N')
+parser.add_argument('--sample_each_contra', type=int, default='10', help='samples to take from each classess C')
 
 opt = parser.parse_args()
 print(opt)
@@ -235,7 +237,6 @@ def train(epoch):
             his = history[:,:rnd+1,:].clone().view(-1, his_length).t()
 
             sampled_ans = opt_answerT[:,rnd,:].clone().view(-1, ans_length).t()
-            sampled_ans_len = opt_answerLen[:,rnd,:].clone().view(-1)
             num_ind_rnd = num_individual[:,rnd,:]
 
             ques_input = torch.LongTensor(ques.size()).cuda()
@@ -249,10 +250,6 @@ def train(epoch):
 
             num_ind_rnd_input = torch.LongTensor(num_ind_rnd.size()).cuda()
             num_ind_rnd_input.copy_(num_ind_rnd)
-
-            # # sample in-batch negative index
-            # batch_sample_idx = torch.zeros(batch_size, opt.neg_batch_sample, dtype=torch.long).cuda()
-            # sample_batch_neg(answerIdx[:,rnd], opt_answerIdx[:,rnd,:], batch_sample_idx, opt.neg_batch_sample)
 
             ques_emb = netW(ques_input, format = 'index')
             his_emb = netW(his_input, format = 'index')
@@ -269,9 +266,7 @@ def train(epoch):
 
             sampled_ans_feat = netD(sampled_ans_emb, sampled_ans_input, sampled_hidden, vocab_size)
 
-            # batch_wrong_feat = wrong_feat.index_select(0, batch_sample_idx.view(-1))
             sampled_ans_feat = sampled_ans_feat.view(batch_size, -1, opt.ninp)
-            # batch_wrong_feat = batch_wrong_feat.view(batch_size, -1, opt.ninp)
 
             nPairLoss = critD(featD, sampled_ans_feat, num_ind_rnd_input)
 
