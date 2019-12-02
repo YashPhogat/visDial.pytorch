@@ -159,8 +159,8 @@ class nPairLoss(nn.Module):
 
         batch_level_ans_mask = torch.logical_not(batch_level_ans_mask)
 
-        if torch.sum(batch_level_ans_mask)<sampled_ans.shape[0]:
-            print('Daav thyo')
+        # if torch.sum(batch_level_ans_mask)<sampled_ans.shape[0]:
+        #     print('Daav thyo')
             # print(torch.sum(batch_level_ans_mask))
 
         batch_level_ans_mask = batch_level_ans_mask.reshape(batch_size,1,1)
