@@ -273,12 +273,9 @@ def train(epoch):
             sampled_ans_feat = sampled_ans_feat.view(batch_size, -1, opt.ninp)
             # batch_wrong_feat = batch_wrong_feat.view(batch_size, -1, opt.ninp)
 
-            nPairLoss, dist_summary, smooth_dist_summary = \
-                critD(featD, sampled_ans_feat, num_ind_rnd_input)
+            nPairLoss = critD(featD, sampled_ans_feat, num_ind_rnd_input)
 
             average_loss += nPairLoss.data.item()
-            avg_dist_summary += dist_summary.cpu().detach().numpy()
-            smooth_avg_dist_summary += smooth_dist_summary.cpu().detach().numpy()
             nPairLoss.backward()
             optimizer.step()
             count += 1
@@ -286,10 +283,8 @@ def train(epoch):
         i += 1
         if i % opt.log_interval == 0:
             average_loss /= count
-            avg_dist_summary = avg_dist_summary/np.sum(avg_dist_summary)
-            smooth_avg_dist_summary = smooth_avg_dist_summary/np.sum(smooth_avg_dist_summary)
-            print("step {} / {} (epoch {}), g_loss {:.3f}, lr = {:.6f}, CEN dist: {}, CEN smooth: {}"\
-                .format(i, len(dataloader), epoch, average_loss, lr, avg_dist_summary, smooth_avg_dist_summary))
+            print("step {} / {} (epoch {}), g_loss {:.3f}, lr = {:.6f}"\
+                .format(i, len(dataloader), epoch, average_loss, lr))
             average_loss = 0
             avg_dist_summary = np.zeros(3, dtype=float)
             smooth_avg_dist_summary = np.zeros(3, dtype=float)
