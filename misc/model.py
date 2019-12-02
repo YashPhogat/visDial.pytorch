@@ -154,13 +154,14 @@ class nPairLoss(nn.Module):
     def forward(self, feat, sampled_ans, num_individual, fake=None, fake_diff_mask=None):
         batch_size = feat.size(0)
 
-        mask_for_samples = num_individual.lt(5)
+        mask_for_samples = num_individual.lt(self.sample_each)
         batch_level_ans_mask = torch.sum(mask_for_samples,dim=1)
 
         batch_level_ans_mask = torch.logical_not(batch_level_ans_mask)
 
         if torch.sum(batch_level_ans_mask)<sampled_ans.shape[0]:
             print('Daav thyo')
+            print(torch.sum(batch_level_ans_mask))
 
         batch_level_ans_mask = batch_level_ans_mask.reshape(batch_size,1,1)
         batch_level_feat_mask = batch_level_ans_mask.reshape(batch_size,1)
