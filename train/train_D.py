@@ -152,7 +152,7 @@ else:
 
 dataset = dl.train(input_img_h5=opt.input_img_h5, input_ques_h5=opt.input_ques_h5,
                 input_json=opt.input_json,
-                num_val = opt.num_val, data_split = 'train', input_probs=opt.input_probs_h5, entail_thers=opt.entail_thres, contra_thres=opt.contra_thres, sample_each=opt.sample_each)
+                num_val = opt.num_val, data_split = 'train', input_probs=opt.input_probs_h5, entail_thers=opt.entail_thres, contra_thres=opt.contra_thres, sample_each_contra=opt.sample_each_contra, sample_each_entail=opt.sample_each_entail, sample_each_neutra=opt.sample_each_neutra)
 
 dataset_val = dl.validate(input_img_h5=opt.input_img_h5, input_ques_h5=opt.input_ques_h5,
                 input_json=opt.input_json,
