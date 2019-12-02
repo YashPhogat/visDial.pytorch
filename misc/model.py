@@ -226,7 +226,7 @@ class nPairLoss(nn.Module):
                torch.log(1/(1+torch.exp(-self.sigma*pair_wise_score_diff_nc)))
         loss = torch.sum(loss)
         loss = -loss
-        print('loss---->{} | norm_loss--->{}'.format(loss/batch_size,norm_loss/batch_size))
+        print('loss---->{} | norm_loss--->{}'.format(loss.data.item()/batch_size.data.item(),norm_loss.data.item()/batch_size.data.item()))
         total_loss = loss + self.alpha_norm*norm_loss
         total_loss = total_loss/batch_size
         return total_loss
