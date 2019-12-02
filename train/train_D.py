@@ -247,6 +247,9 @@ def train(epoch):
             sampled_ans_input = torch.LongTensor(sampled_ans.size()).cuda()
             sampled_ans_input.copy_(sampled_ans)
 
+            num_ind_rnd_input = torch.LongTensor(num_ind_rnd.size()).cuda()
+            num_ind_rnd_input.copy(num_ind_rnd)
+
             # # sample in-batch negative index
             # batch_sample_idx = torch.zeros(batch_size, opt.neg_batch_sample, dtype=torch.long).cuda()
             # sample_batch_neg(answerIdx[:,rnd], opt_answerIdx[:,rnd,:], batch_sample_idx, opt.neg_batch_sample)
@@ -271,7 +274,7 @@ def train(epoch):
             # batch_wrong_feat = batch_wrong_feat.view(batch_size, -1, opt.ninp)
 
             nPairLoss, dist_summary, smooth_dist_summary = \
-                critD(featD, sampled_ans_feat, num_ind_rnd)
+                critD(featD, sampled_ans_feat, num_ind_rnd_input)
 
             average_loss += nPairLoss.data.item()
             avg_dist_summary += dist_summary.cpu().detach().numpy()
