@@ -155,25 +155,28 @@ class nPairLoss(nn.Module):
         batch_size = feat.size(0)
 
         mask_for_samples = num_individual.lt(5)
-        mask_sum = torch.sum(mask_for_samples,dim=1)
+        batch_level_ans_mask = torch.sum(mask_for_samples,dim=1)
 
-        mask_sum = torch.logical_not(mask_sum)
+        batch_level_ans_mask = torch.logical_not(batch_level_ans_mask)
 
-        if torch.sum(mask_sum)<sampled_ans.shape[0]:
+        if torch.sum(batch_level_ans_mask)<sampled_ans.shape[0]:
             print('Daav thyo')
-        mask_sum = mask_sum.reshape(batch_size,1,1)
-        batch_size = torch.sum(mask_sum)
-        final_mask_sum = mask_sum.expand_as(sampled_ans)
 
-        new_sampled_ans = torch.masked_select(sampled_ans,final_mask_sum).reshape(batch_size,sampled_ans.shape[1],sampled_ans.shape[2])
+        batch_level_ans_mask = batch_level_ans_mask.reshape(batch_size,1,1)
+        batch_level_feat_mask = batch_level_ans_mask.reshape(batch_size,1)
+
+        batch_size = torch.sum(batch_level_ans_mask)
+        final_batch_level_ans_mask = batch_level_ans_mask.expand_as(sampled_ans)
+
+        new_sampled_ans = torch.masked_select(sampled_ans,final_batch_level_ans_mask).reshape(batch_size,sampled_ans.shape[1],sampled_ans.shape[2])
 
         # batch_size = new_sampled_ans.shape[0]
         contra_ans_emb = new_sampled_ans[:, 0: self.sample_each, :]
         entail_ans_emb = new_sampled_ans[:, self.sample_each:2*self.sample_each, :]
         neutra_ans_emb = new_sampled_ans[:, 2*self.sample_each:3*self.sample_each, :]
 
-        final_mask_sum_feat = mask_sum.expand_as(feat)
-        feat = torch.masked_select(feat,final_mask_sum_feat).reshape(batch_size,feat.shape[1])
+        final_batch_level_feat_mask = batch_level_feat_mask.expand_as(feat)
+        feat = torch.masked_select(feat,final_batch_level_feat_mask).reshape(batch_size,feat.shape[1])
         feat = feat.view(-1, self.ninp, 1)
 
         contra_scores = torch.bmm(contra_ans_emb, feat)
