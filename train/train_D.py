@@ -248,7 +248,7 @@ def train(epoch):
             sampled_ans_input.copy_(sampled_ans)
 
             num_ind_rnd_input = torch.LongTensor(num_ind_rnd.size()).cuda()
-            num_ind_rnd_input.copy(num_ind_rnd)
+            num_ind_rnd_input.copy_(num_ind_rnd)
 
             # # sample in-batch negative index
             # batch_sample_idx = torch.zeros(batch_size, opt.neg_batch_sample, dtype=torch.long).cuda()
