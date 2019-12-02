@@ -139,7 +139,7 @@ class nPairLoss(nn.Module):
 
     Improved Deep Metric Learning with Multi-class N-pair Loss Objective (NIPS)
     """
-    def __init__(self, ninp, margin, alpha_norm=0.1, sigma=1.0,
+    def __init__(self, ninp, margin, alpha_norm=0.1, sigma=1.0, sample_each=5,
                  debug = False, log_iter=5):
         super(nPairLoss, self).__init__()
         self.ninp = ninp
@@ -149,6 +149,7 @@ class nPairLoss(nn.Module):
         self.debug = debug
         self.iter = 0
         self.log_iter = log_iter
+        self.sample_each = sample_each
 
     def forward(self, feat, sampled_ans, num_individual, fake=None, fake_diff_mask=None):
         batch_size = feat.size(0)
@@ -161,34 +162,32 @@ class nPairLoss(nn.Module):
         mask_sum = mask_sum.reshape(batch_size,1,1)
         final_mask_sum = mask_sum.expand_as(sampled_ans)
 
-        torch.mask_select(sampled_ans,final_mask_sum)
-        contra_ans_emb = sampled_ans[:, 0: num_individual[:, 0]]
-        entail_ans_emb = sampled_ans[:, num_individual[0]: num_individual[0]+num_individual[1]]
-        neutra_ans_emb = sampled_ans[:, num_individual[0]+num_individual[1]:]
+        new_sampled_ans = torch.masked_select(sampled_ans,final_mask_sum)
+
+        batch_size = new_sampled_ans.shape[0]
+        contra_ans_emb = new_sampled_ans[:, 0: self.sample_each]
+        entail_ans_emb = new_sampled_ans[:, self.sample_each:2*self.sample_each]
+        neutra_ans_emb = new_sampled_ans[:, 2*self.sample_each:3*self.sample_each]
 
 
         feat = feat.view(-1, self.ninp, 1)
 
-        contra_scores = torch.bmm(contra_ans_emb)
+        contra_scores = torch.bmm(contra_ans_emb, feat)
+        entail_scores = torch.bmm(entail_ans_emb, feat)
+        neutra_scores = torch.bmm(neutra_ans_emb, feat)
 
-        right_dis = torch.bmm(right.view(-1, 1, self.ninp), feat)
-        wrong_dis = torch.bmm(wrong, feat)
+        contra_scores_permute = contra_scores.permute(0,2,1)
+        neutra_scores_permute = neutra_scores.permute(0,2,1)
 
-        thresh_mask = torch.gt(probs, self.contra_thresh)
-        contra_mask = torch.BoolTensor(probs.size()).cuda()
-        contra_mask[:, :, :] = False
-        contra_mask[:, :, 0] = True
+        pair_wise_score_diff_ec = entail_scores.expand(batch_size, self.sample_each, self.sample_each) - contra_scores_permute.expand(batch_size, self.sample_each, self.sample_each)
+        pair_wise_score_diff_en = entail_scores.expand(batch_size, self.sample_each, self.sample_each) - neutra_scores_permute.expand(batch_size, self.sample_each, self.sample_each)
+        pair_wise_score_diff_nc = neutra_scores.expand(batch_size, self.sample_each, self.sample_each) - contra_scores_permute.expand(batch_size, self.sample_each, self.sample_each)
 
-        decrease_contra_mask = contra_mask*torch.logical_not(thresh_mask)
+        norm_loss = feat.norm() + new_sampled_ans.norm()
 
-        probs[decrease_contra_mask] = 0.
-        one_hot_probs = torch.nn.functional.one_hot(probs.argmax(dim=2), 3).double()
-
-        dist_summary = torch.sum(torch.sum(one_hot_probs, dim=1), dim=0)
-
-        pair_wise_score_diff = torch.squeeze(right_dis.expand_as(wrong_dis) - wrong_dis)
         if self.debug:
             if self.iter % self.log_iter == 0:
+                print('in debug mode')
                 # print('---------------- Score difference: --------------')
                 # rows = [['data_'+str(i) for i in range(batch_size)]]
                 # pair_wise_score_diff_np = pair_wise_score_diff.cpu().detach().numpy()
@@ -204,43 +203,24 @@ class nPairLoss(nn.Module):
                 # st = Texttable()
                 # st.add_rows(rows)
                 # print(st.draw())
-                print('----------------Probabilities------------------')
-                print(probs.cpu().detach().numpy())
-                print('----------------One hot------------------------')
-                print(one_hot_probs.cpu().detach().numpy())
-                print('----------------dist_summary-------------------')
-                print(dist_summary.cpu().detach().numpy())
-                print('----------------smooth_dist_summary------------')
-                print(smooth_dist_summary.cpu().detach().numpy())
-                pause()
+                # print('----------------Probabilities------------------')
+                # print(probs.cpu().detach().numpy())
+                # print('----------------One hot------------------------')
+                # print(one_hot_probs.cpu().detach().numpy())
+                # print('----------------dist_summary-------------------')
+                # print(dist_summary.cpu().detach().numpy())
+                # print('----------------smooth_dist_summary------------')
+                # print(smooth_dist_summary.cpu().detach().numpy())
+                # pause()
 
-        w = one_hot_probs[:, :, 0]*self.alphaC + one_hot_probs[:, :, 1]*self.alphaE + one_hot_probs[:, :, 2]*self.alphaN #b x neg
-
-        truth_separation_probs = 1./ (1 + torch.exp(-self.sigma*(pair_wise_score_diff)))
-
-        log_likelihood_expanded = torch.log(truth_separation_probs) # b x neg
-
-        weighted_log_likelihood = log_likelihood_expanded * w
-
-        loss_dis = -torch.sum(torch.sum(weighted_log_likelihood, dim = 1))
-
-        loss_norm = right.norm() + feat.norm() + wrong.norm()
-
-
-        # if fake:
-        #     fake_dis = torch.bmm(fake.view(-1, 1, self.ninp), feat)
-        #     fake_score = torch.masked_select(torch.exp(fake_dis - right_dis), fake_diff_mask)
-        #
-        #     margin_score = F.relu(torch.log(fake_score + 1) - self.margin)
-        #     loss_fake = torch.sum(margin_score)
-        #     loss_dis += loss_fake
-        #     loss_norm += fake.norm()
-
-        loss = (loss_dis + self.alpha_norm * loss_norm) / batch_size
-        # if fake:
-        #     return loss, loss_fake.data[0] / batch_size
-        # else:
-        return loss, dist_summary, smooth_dist_summary
+        loss = torch.log(1/1+torch.exp(-self.sigma*pair_wise_score_diff_ec)) + \
+               torch.log(1/1+torch.exp(-self.sigma*pair_wise_score_diff_en)) + \
+               torch.log(1/1+torch.exp(-self.sigma*pair_wise_score_diff_nc))
+        loss = torch.sum(loss)
+        loss = -loss
+        total_loss = loss + self.alpha_norm*norm_loss
+        total_loss = total_loss/batch_size
+        return total_loss
 
 class G_loss(nn.Module):
     """

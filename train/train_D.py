@@ -84,6 +84,9 @@ parser.add_argument('--log_interval', type=int, default=5, help='how many iterat
 parser.add_argument('--path_to_home',type=str)
 parser.add_argument('--exp_name', type=str, help='name of the expemriment')
 parser.add_argument('--early_stop', type=int, default='1000000', help='datapoints to consider')
+parser.add_argument('--entail_thres', type=float, default=0.5, help='threshold probability to consider as Entailment to GT')
+parser.add_argument('--contra_thres', type=float, default=0.9, help='threshold probability to consider as contradiction to GT')
+parser.add_argument('--sample_each', type=int, default='5', help='samples to take from each classess ENC')
 
 opt = parser.parse_args()
 print(opt)
@@ -147,7 +150,7 @@ else:
 
 dataset = dl.train(input_img_h5=opt.input_img_h5, input_ques_h5=opt.input_ques_h5,
                 input_json=opt.input_json,
-                num_val = opt.num_val, data_split = 'train', input_probs=opt.input_probs_h5)
+                num_val = opt.num_val, data_split = 'train', input_probs=opt.input_probs_h5, entail_thers=opt.entail_thres, contra_thres=opt.contra_thres, sample_each=opt.sample_each)
 
 dataset_val = dl.validate(input_img_h5=opt.input_img_h5, input_ques_h5=opt.input_ques_h5,
                 input_json=opt.input_json,
@@ -173,7 +176,7 @@ img_feat_size = 512
 netE = _netE(opt.model, opt.ninp, opt.nhid, opt.nlayers, opt.dropout, img_feat_size)
 netW = model._netW(vocab_size, opt.ninp, opt.dropout)
 netD = model._netD(opt.model, opt.ninp, opt.nhid, opt.nlayers, vocab_size, opt.dropout)
-critD =model.nPairLoss(opt.ninp, opt.margin, opt.alpha_norm, opt.sigma, opt.debug, opt.log_interval)
+critD =model.nPairLoss(opt.ninp, opt.margin, opt.alpha_norm, opt.sigma, opt.sample_each, opt.debug, opt.log_interval)
 
 if opt.model_path != '': # load the pre-trained model.
     netW.load_state_dict(checkpoint['netW'])
