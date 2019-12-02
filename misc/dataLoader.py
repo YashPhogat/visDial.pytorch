@@ -182,7 +182,10 @@ class train(data.Dataset) :  # torch wrapper
             neutra_list = tag_indices[-total_num_neutra:]
             random.shuffle(neutra_list)
 
-            entail_list[0] = self.ans_ids[index,i]
+            if len(entail_list)>0:
+                entail_list[0] = self.ans_ids[index,i]
+            else:
+                entail_list = [self.ans_ids[index,i]]
             opt_ids_temp = self.opt_ids[index, i]
             opt_ids = []
             try:
