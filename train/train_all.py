@@ -424,7 +424,7 @@ def train(epoch):
 
         if i % opt.log_interval == 0:
             print ('Epoch:%d %d/%d, err_lm %4f, err_d %4f, err_g %4f, d_fake %4f, g_fake %4f' \
-                % (epoch, i, len(dataloader), err_lm_tmp/10, err_d_tmp/10, err_g_tmp/10, err_d_fake_tmp/10, \
+                % (epoch, i, dataloader_size, err_lm_tmp/10, err_d_tmp/10, err_g_tmp/10, err_d_fake_tmp/10, \
                     err_g_fake_tmp/10))
 
 
