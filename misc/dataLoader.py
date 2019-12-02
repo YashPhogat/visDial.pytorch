@@ -12,12 +12,15 @@ from misc.utils import repackage_hidden, clip_gradient, adjust_learning_rate, de
 
 
 class train(data.Dataset) :  # torch wrapper
-    def __init__(self, input_img_h5, input_ques_h5, input_json, negative_sample, num_val, data_split,
-                 input_probs='../script/data/visdial_data_prob.h5') :
+    def __init__(self, input_img_h5, input_ques_h5, input_json, num_val, data_split,
+                 input_probs='../script/data/visdial_data_prob.h5',entail_thers = 0.5, contra_thres = 0.9, sample_each = 5) :
         #This is the number of images for which we have copied the new vgg features to the parallely
         #accessible h5 file. DO NOT CHANGE THIS!!!
         self.TOTAL_VALID_IMAGES = 8000
-
+        self.entail_thres = entail_thers
+        self.contra_thres = contra_thres
+        self.sample_each = sample_each
+        self.total_sample = 3*self.sample_each
         print(h5py.version.info)
         print('DataLoader loading: %s' % data_split)
         print('Loading image feature from %s' % input_img_h5)
@@ -77,12 +80,12 @@ class train(data.Dataset) :  # torch wrapper
         print('Vocab Size: %d' % self.vocab_size)
         self.split = split
         self.total_qa_pairs = 10
-        self.negative_sample = negative_sample
 
         f = h5py.File(input_probs, 'r')
         opt_probs_temp = f['opt_train'][s:e]
         total_images = e-s
         self.opt_probs = self._process_probs(opt_probs_temp, total_images)
+        self.opt_tags,  self.tag_frequency = self.get_tags(self.opt_probs, self.entail_thres, self.contra_thres)
         f.close()
 
     def _process_probs(self, long_probs, total_images):
@@ -95,6 +98,29 @@ class train(data.Dataset) :  # torch wrapper
         probs[:, :, :, 0] = 1 -probs[:, :, :, 1] - probs[:, :, :, 2]
         return probs
 
+    def get_tags(self, probs, entail_thres, contra_thres):
+        entail_mask = np.zeros(probs.shape, dtype=np.bool)
+        entail_mask[:, :, :, 1] = True
+        entail_thres_mask = probs > entail_thres
+        entail_final_mask = entail_mask * entail_thres_mask
+        entail_final_mask_sum = np.sum(entail_final_mask, axis=-1)
+
+        contra_mask = np.zeros(probs.shape, dtype=np.bool)
+        contra_mask[:, :, :, 0] = True
+        contra_thres_mask = probs > contra_thres
+        contra_final_mask = contra_mask * contra_thres_mask
+        contra_final_mask_sum = 2 * np.sum(contra_final_mask, axis=-1)
+
+        tags = np.zeros(shape=(probs.shape[0], probs.shape[1], probs.shape[2]), dtype=np.int8)
+
+        tags = entail_final_mask_sum + contra_final_mask_sum
+        tags = 2 - tags
+
+        frequency = np.zeros(shape=(probs.shape[0],probs.shape[1],probs.shape[3]),dtype=np.int32)
+        frequency[:,:,0] = np.sum(tags==0,axis=-1)
+        frequency[:, :, 1] = np.sum(tags == 1, axis=-1)
+        frequency[:, :, 2] = np.sum(tags == 2, axis=-1)
+        return tags, frequency
 
     def __getitem__(self, index) :
         # get the image
@@ -108,17 +134,14 @@ class train(data.Dataset) :  # torch wrapper
         his[0, self.his_length - self.cap_len[index] :] = self.cap[index, :self.cap_len[index]]
 
         ques = np.zeros((self.total_qa_pairs, self.ques_length))
-        ans_vocab_first = np.zeros((self.total_qa_pairs, self.ans_length + 1))
-        ans_vocab_last = np.zeros((self.total_qa_pairs, self.ans_length + 1))
         ques_trailing_zeros = np.zeros((self.total_qa_pairs, self.ques_length))
 
-        opt_ans_vocab_first = np.zeros((self.total_qa_pairs, self.negative_sample, self.ans_length + 1))
-        ans_len = np.zeros((self.total_qa_pairs))
-        opt_ans_len = np.zeros((self.total_qa_pairs, self.negative_sample))
+        opt_ans_vocab_first = np.zeros((self.total_qa_pairs, self.total_sample, self.ans_length + 1))
+        opt_ans_len = np.zeros((self.total_qa_pairs, self.total_sample))
 
         ans_idx = np.zeros((self.total_qa_pairs))
-        opt_ans_idx = np.zeros((self.total_qa_pairs, self.negative_sample))
-        opt_selected_probs = np.zeros((self.total_qa_pairs, self.negative_sample, 3))
+        opt_ans_idx = np.zeros((self.total_qa_pairs, self.total_sample))
+        opt_selected_probs = np.zeros((self.total_qa_pairs, self.total_sample, 3))
 
         for i in range(self.total_qa_pairs) :
             # get the index
@@ -134,13 +157,26 @@ class train(data.Dataset) :  # torch wrapper
             ques[i, self.ques_length - q_len :] = self.ques[index, i, :q_len]
 
             ques_trailing_zeros[i, :q_len] = self.ques[index, i, :q_len]
-            ans_vocab_first[i, 1 :a_len + 1] = self.ans[index, i, :a_len]
-            ans_vocab_first[i, 0] = self.vocab_size
 
-            ans_vocab_last[i, :a_len] = self.ans[index, i, :a_len]
-            ans_vocab_last[i, a_len] = self.vocab_size
-            ans_len[i] = self.ans_len[index, i]
+            ########################################################################
 
+            tag_indices = np.argsort(self.opt_tags[index,i])
+            total_num_contra = self.tag_frequency[index,i,0]
+            total_num_entail = self.tag_frequency[index, i, 1]
+            total_num_neutra = self.tag_frequency[index, i, 2]
+            num_contra = min(self.sample_each, total_num_contra)
+            num_entail = min(self.sample_each, total_num_entail)
+            num_neutra = self.total_sample - num_contra - num_entail
+
+            contra_list = tag_indices[:total_num_contra]
+            random.shuffle(contra_list)
+            entail_list = tag_indices[total_num_contra:total_num_contra+total_num_entail]
+            random.shuffle(entail_list)
+            neutra_list = tag_indices[-total_num_neutra:]
+            random.shuffle(neutra_list)
+
+
+            ########################################################################
             opt_ids = self.opt_ids[index, i]  # since python start from 0
             opt_original_ranks = [i for i in  range(len(opt_ids))]
 
@@ -155,7 +191,7 @@ class train(data.Dataset) :  # torch wrapper
 
             random.shuffle(id_rank_combined)
             opt_ids, opt_original_ranks = zip(*id_rank_combined)
-            for j in range(self.negative_sample) :
+            for j in range(self.total_sample) :
                 ids = opt_ids[j]
                 opt_ans_idx[i, j] = ids
                 opt_selected_probs[i, j, :] = opt_probs[opt_original_ranks[j], :]
@@ -168,24 +204,24 @@ class train(data.Dataset) :  # torch wrapper
 
         his = torch.from_numpy(his)
         ques = torch.from_numpy(ques)
-        ans_vocab_first = torch.from_numpy(ans_vocab_first)
-        ans_vocab_last = torch.from_numpy(ans_vocab_last)
+
+
         ques_trailing_zeros = torch.from_numpy(ques_trailing_zeros)
-        ans_len = torch.from_numpy(ans_len)
+
         opt_ans_len = torch.from_numpy(opt_ans_len)
         opt_ans_vocab_first = torch.from_numpy(opt_ans_vocab_first)
-        ans_idx = torch.from_numpy(ans_idx)
-        opt_ans_idx = torch.from_numpy(opt_ans_idx)
 
-        return img, his, ques, ans_vocab_first, ans_vocab_last, ans_len, ans_idx, ques_trailing_zeros, \
-               opt_ans_vocab_first, opt_ans_len, opt_ans_idx, opt_selected_probs
+
+
+        return img, his, ques, ques_trailing_zeros, \
+               opt_ans_vocab_first, opt_ans_len, opt_selected_probs
 
     def __len__(self) :
         return self.ques.shape[0]
 
 
 class validate(data.Dataset) :  # torch wrapper
-    def __init__(self, input_img_h5, input_ques_h5, input_json, negative_sample, num_val, data_split) :
+    def __init__(self, input_img_h5, input_ques_h5, input_json, num_val, data_split) :
         # This is the number of images for which we have copied the new vgg features to the parallely
         # accessible h5 file. DO NOT CHANGE THIS!!!
         TOTAL_VALID_TEST_IMAGES = 40000
@@ -247,7 +283,6 @@ class validate(data.Dataset) :  # torch wrapper
         print('Vocab Size: %d' % self.vocab_size)
         self.split = split
         self.total_qa_pairs = 10
-        self.negative_sample = negative_sample
 
     def __getitem__(self, index) :
 

@@ -146,11 +146,11 @@ else:
 ####################################################################################
 
 dataset = dl.train(input_img_h5=opt.input_img_h5, input_ques_h5=opt.input_ques_h5,
-                input_json=opt.input_json, negative_sample = opt.negative_sample,
+                input_json=opt.input_json,
                 num_val = opt.num_val, data_split = 'train', input_probs=opt.input_probs_h5)
 
 dataset_val = dl.validate(input_img_h5=opt.input_img_h5, input_ques_h5=opt.input_ques_h5,
-                input_json=opt.input_json, negative_sample = opt.negative_sample,
+                input_json=opt.input_json,
                 num_val = opt.num_val, data_split = 'val')
 
 dataloader = torch.utils.data.DataLoader(dataset, batch_size=opt.batchSize,
