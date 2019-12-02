@@ -80,7 +80,7 @@ parser.add_argument('--margin', type=float, default=2, help='number of epochs to
 parser.add_argument('--gumble_weight', type=int, default=0.5, help='folder to output images and model checkpoints')
 parser.add_argument('--log_interval', type=int, default=1, help='how many iterations show the log info')
 parser.add_argument('--path_to_home',type=str)
-
+parser.add_argument('--early_stop', type=int, default=100000000, help='data points to consider')
 opt = parser.parse_args()
 print(opt)
 sys.path.insert(1, opt.path_to_home)
