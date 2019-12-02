@@ -158,10 +158,12 @@ class nPairLoss(nn.Module):
         mask_sum = torch.sum(mask_for_samples,dim=1)
 
         mask_sum = torch.logical_not(mask_sum)
-        batch_size = torch.sum(mask_sum)
+
         if torch.sum(mask_sum)<sampled_ans.shape[0]:
             print('Daav thyo')
         mask_sum = mask_sum.reshape(batch_size,1,1)
+
+        batch_size = torch.sum(mask_sum)
         final_mask_sum = mask_sum.expand_as(sampled_ans)
 
         new_sampled_ans = torch.masked_select(sampled_ans,final_mask_sum).reshape(batch_size,sampled_ans[1],sampled_ans[2])
