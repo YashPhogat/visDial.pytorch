@@ -155,7 +155,7 @@ dataset_val = dl.validate(input_img_h5=opt.input_img_h5, input_ques_h5=opt.input
                 num_val = opt.num_val, data_split = 'val')
 
 dataloader = torch.utils.data.DataLoader(dataset, batch_size=opt.batchSize,
-                                         shuffle=True, num_workers=int(opt.workers))
+                                         shuffle=False, num_workers=int(opt.workers))
 
 dataloader_val = torch.utils.data.DataLoader(dataset_val, batch_size=10,
                                          shuffle=False, num_workers=int(opt.workers))
