@@ -155,6 +155,7 @@ class nPairLoss(nn.Module):
 
         mask_for_samples = num_individual.lt(5)
         mask_sum = torch.sum(mask_for_samples,dim=1)
+        mask_sum.logical_not_()
         if torch.sum(mask_sum)<sampled_ans.shape[0]:
             print('Daav thyo')
         final_mask_sum = mask_sum.expand(mask_sum.shape[0],sampled_ans[1], sampled_ans[2])
