@@ -178,7 +178,7 @@ img_feat_size = 512
 netE = _netE(opt.model, opt.ninp, opt.nhid, opt.nlayers, opt.dropout, img_feat_size)
 netW = model._netW(vocab_size, opt.ninp, opt.dropout)
 netD = model._netD(opt.model, opt.ninp, opt.nhid, opt.nlayers, vocab_size, opt.dropout)
-critD =model.nPairLoss(opt.ninp, opt.margin, opt.alpha_norm, opt.sigma, opt.sample_each, opt.debug, opt.log_interval)
+critD =model.nPairLoss(opt.ninp, opt.margin, opt.alpha_norm, opt.sigma, opt.sample_each_contra, opt.sample_each_entail, opt.sample_each_neutra, opt.debug, opt.log_interval)
 
 if opt.model_path != '': # load the pre-trained model.
     netW.load_state_dict(checkpoint['netW'])
