@@ -116,12 +116,13 @@ if torch.cuda.is_available() and not opt.cuda:
     print("WARNING: You have a CUDA device, so you should probably run with --cuda")
 
 model_path = opt.model_path
-
+early_stop = opt.early_stop
 if opt.model_path!='':
     checkpoint = torch.load(opt.model_path)
     opt = checkpoint['opt']
     opt.start_epoch = checkpoint['epoch']
     save_path = opt.save_path
+    opt.early_stop = early_stop
 else:
     # create new folder.
     t = datetime.datetime.now()
@@ -244,7 +245,11 @@ def train(epoch):
     count = 0
     i = 0
     loss_store = []
-    while i < len(dataloader):
+
+    early_stop = int(opt.early_stop / opt.batchSize)
+    dataloader_size = min(len(dataloader), early_stop)
+
+    while i < dataloader_size: #len(data_loader)
         t1 = time.time()
         data = data_iter.next()
         image, history, question, answer, answerT, answerLen, answerIdx, questionL, \
