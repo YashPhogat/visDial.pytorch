@@ -244,7 +244,7 @@ def train(epoch):
             his_input = torch.LongTensor(his.size()).cuda()
             his_input.copy_(his)
 
-            sampled_ans_input = torch.LongTensor(sampled_ans.size()).cpu()
+            sampled_ans_input = torch.LongTensor(sampled_ans.size()).cuda()
             sampled_ans_input.copy_(sampled_ans)
 
             # # sample in-batch negative index
