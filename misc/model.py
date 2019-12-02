@@ -139,29 +139,37 @@ class nPairLoss(nn.Module):
 
     Improved Deep Metric Learning with Multi-class N-pair Loss Objective (NIPS)
     """
-    def __init__(self, ninp, margin, alpha_norm=0.1, sigma=1.0, alphaC = 2.0, alphaE = 0.1, alphaN = 1.0,
-                 debug = False, log_iter=5, contra_thresh = 0.333):
+    def __init__(self, ninp, margin, alpha_norm=0.1, sigma=1.0,
+                 debug = False, log_iter=5):
         super(nPairLoss, self).__init__()
         self.ninp = ninp
         self.margin = np.log(margin)
         self.alpha_norm = alpha_norm
         self.sigma = sigma
-        self.alphaC = alphaC
-        self.alphaE = alphaE
-        self.alphaN = alphaN
         self.debug = debug
         self.iter = 0
         self.log_iter = log_iter
-        self.contra_thresh = contra_thresh
 
-    def forward(self, feat, right, wrong, probs, fake=None, fake_diff_mask=None):
-        np.set_printoptions(precision=4)
+    def forward(self, feat, right, wrong, sampled_ans, num_individual, fake=None, fake_diff_mask=None):
         num_wrong = wrong.size(1)
         batch_size = feat.size(0)
 
-        smooth_dist_summary = torch.sum(torch.sum(probs, dim=1), dim=0)
+        mask_for_samples = num_individual.lt(5)
+        mask_sum = torch.sum(mask_for_samples,dim=1)
+        if torch.sum(mask_sum)<sampled_ans.shape[0]:
+            print('Daav thyo')
+        final_mask_sum = mask_sum.expand(mask_sum.shape[0],sampled_ans[1], sampled_ans[2])
+
+        torch.mask_select(sampled_ans,final_mask_sum)
+        contra_ans_emb = sampled_ans[:, 0: num_individual[:, 0]]
+        entail_ans_emb = sampled_ans[:, num_individual[0]: num_individual[0]+num_individual[1]]
+        neutra_ans_emb = sampled_ans[:, num_individual[0]+num_individual[1]:]
+
 
         feat = feat.view(-1, self.ninp, 1)
+
+        contra_scores = torch.bmm(contra_ans_emb)
+
         right_dis = torch.bmm(right.view(-1, 1, self.ninp), feat)
         wrong_dis = torch.bmm(wrong, feat)
 
