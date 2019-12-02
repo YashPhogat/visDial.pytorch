@@ -162,7 +162,6 @@ class nPairLoss(nn.Module):
         if torch.sum(mask_sum)<sampled_ans.shape[0]:
             print('Daav thyo')
         mask_sum = mask_sum.reshape(batch_size,1,1)
-
         batch_size = torch.sum(mask_sum)
         final_mask_sum = mask_sum.expand_as(sampled_ans)
 
@@ -173,7 +172,8 @@ class nPairLoss(nn.Module):
         entail_ans_emb = new_sampled_ans[:, self.sample_each:2*self.sample_each, :]
         neutra_ans_emb = new_sampled_ans[:, 2*self.sample_each:3*self.sample_each, :]
 
-
+        final_mask_sum_feat = mask_sum.expand_as(feat)
+        feat = torch.masked_select(feat,final_mask_sum_feat).reshape(batch_size,feat.shape[1])
         feat = feat.view(-1, self.ninp, 1)
 
         contra_scores = torch.bmm(contra_ans_emb, feat)
