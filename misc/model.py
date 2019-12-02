@@ -167,9 +167,9 @@ class nPairLoss(nn.Module):
         new_sampled_ans = torch.masked_select(sampled_ans,final_mask_sum)
 
         batch_size = new_sampled_ans.shape[0]
-        contra_ans_emb = new_sampled_ans[:, 0: self.sample_each]
-        entail_ans_emb = new_sampled_ans[:, self.sample_each:2*self.sample_each]
-        neutra_ans_emb = new_sampled_ans[:, 2*self.sample_each:3*self.sample_each]
+        contra_ans_emb = new_sampled_ans[:, 0: self.sample_each, :]
+        entail_ans_emb = new_sampled_ans[:, self.sample_each:2*self.sample_each, :]
+        neutra_ans_emb = new_sampled_ans[:, 2*self.sample_each:3*self.sample_each, :]
 
 
         feat = feat.view(-1, self.ninp, 1)
