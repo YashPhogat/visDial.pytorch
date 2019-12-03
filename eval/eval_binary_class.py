@@ -144,7 +144,7 @@ input_img_h5 = '../script/data/vdl_img_vgg.h5'
 f_image = h5py.File(input_img_h5, 'r')
 imgs = f_image['images_train']
 
-batch_size = 5
+batch_size = 120
 n = len(mapping_data)
 
 def get_questions_and_history(start, end, mapping_data):
@@ -301,12 +301,6 @@ for i in range(0, n, batch_size):
             save_tmp[b].append(data_dict)
 
     result_all += save_tmp
-
-    if(i>20):
-        print('--------------------------------')
-        print(i)
-        print('--------------------------------')
-        break
 
 json.dump(result_all, open(file_name+'.json', 'w'))
 
