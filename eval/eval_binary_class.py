@@ -127,8 +127,13 @@ netE = _netE(opt.model, opt.ninp, opt.nhid, opt.nlayers, opt.dropout, img_feat_s
 netW = model._netW(vocab_size, opt.ninp, opt.dropout)
 netG = _netG(opt.model, vocab_size, opt.ninp, opt.nhid, opt.nlayers, opt.dropout, False)
 
-netW.load_state_dict(checkpoint['netW'])
-netE.load_state_dict(checkpoint['netE'])
+if opt.evalall:
+    netW.load_state_dict(checkpoint['netW_g'])
+    netE.load_state_dict(checkpoint['netE_g'])
+
+else:
+    netW.load_state_dict(checkpoint['netW'])
+    netE.load_state_dict(checkpoint['netE'])
 netG.load_state_dict(checkpoint['netG'])
 
 if opt.cuda:
