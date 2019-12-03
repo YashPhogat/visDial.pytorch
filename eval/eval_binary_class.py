@@ -116,7 +116,7 @@ ques_length = dataset_val.ques_length  # 16
 ans_length = dataset_val.ans_length + 1  # 9
 his_length = dataset_val.ques_length + dataset_val.ans_length  # 24
 itow = dataset_val.itow  # index to word
-img_feat_size = opt.conv_feat_size  # 512
+img_feat_size = 512  # 512
 
 mapping_file = '../script/data/modified_mapped.json'
 mapping_data = json.load(open(mapping_file))
