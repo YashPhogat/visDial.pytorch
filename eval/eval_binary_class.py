@@ -253,6 +253,9 @@ for i in range(0, n, batch_size):
 
     result_all += save_tmp
 
+    if(i>20):
+        break
+
 json.dump(result_all, open(file_name+'.json', 'w'))
 
 
