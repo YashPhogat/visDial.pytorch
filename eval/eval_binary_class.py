@@ -131,6 +131,11 @@ netW.load_state_dict(checkpoint['netW'])
 netE.load_state_dict(checkpoint['netE'])
 netG.load_state_dict(checkpoint['netG'])
 
+if opt.cuda:
+    netW.cuda()
+    netE.cuda()
+    netG.cuda()
+
 netE.eval()
 netW.eval()
 netG.eval()
