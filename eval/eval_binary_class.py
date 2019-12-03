@@ -43,7 +43,7 @@ parser.add_argument('--path_to_home', type=str)
 parser.add_argument('--evalall', action='store_true')
 parser.add_argument('--early_stop', type=int, default='1000000', help='datapoints to consider')
 parser.add_argument('--file_name', type=str)
-
+parser.add_argument('--debug', action='store_true', help='enables cuda')
 opt = parser.parse_args()
 
 sys.path.insert(1, '../')
@@ -87,6 +87,7 @@ input_json = opt.input_json
 early_stop = opt.early_stop
 evalall = opt.evalall
 file_name = opt.file_name
+debug = opt.debug
 opt = checkpoint['opt']
 opt.start_epoch = checkpoint['epoch']
 cur_bs = 5
@@ -98,7 +99,7 @@ opt.input_json = input_json
 opt.early_stop = early_stop
 opt.evalall = evalall
 opt.file_name = file_name
-
+opt.debug = debug
 if opt.file_name == '':
     print('provide output file name')
     exit(255)
@@ -204,6 +205,9 @@ def get_imgs(img_data):
 
 result_all = []
 
+yes_idx = 1188
+no_idx = 4059
+
 for i in range(0, n, batch_size):
     start = i
     end = min(n, i + batch_size)
@@ -279,6 +283,15 @@ for i in range(0, n, batch_size):
         ans_emb = netW(ans_input, format='index')
 
         output, _ = netG(ans_emb, hidden_replicated)
+
+        if opt.debug:
+            print(output.shape)
+            print(output.reshape(9,-1,vocab_size+1)[0,0,yes_idx])
+            print(output.reshape(9, -1, vocab_size + 1)[0, 0, no_idx])
+            print('-------------------------------')
+            print(output.reshape(9, -1, vocab_size + 1)[0, 1, yes_idx])
+            print(output.reshape(9, -1, vocab_size + 1)[0, 1, no_idx])
+
         logprob = - output
         logprob_select = torch.gather(logprob, 1, ans_target.view(-1, 1))
 
@@ -305,10 +318,15 @@ for i in range(0, n, batch_size):
             data_dict['no_prob'] = str(prob_np[b, 1])
             save_tmp[b].append(data_dict)
 
+    if opt.debug:
+        if i>20:
+            break
+
     print('done : {}/{}'.format(i,n))
     result_all += save_tmp
 
-json.dump(result_all, open(file_name+'.json', 'w'))
+if not opt.debug:
+    json.dump(result_all, open(file_name+'.json', 'w'))
 
 
 
