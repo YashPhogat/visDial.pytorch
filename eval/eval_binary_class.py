@@ -106,8 +106,7 @@ if opt.file_name == '':
 ############################## Dataset loading #################################
 
 dataset_val = dl.validate(input_img_h5=opt.input_img_h5, input_ques_h5=opt.input_ques_h5,
-                          input_json=opt.input_json, negative_sample=opt.negative_sample,
-                          num_val=opt.num_val, data_split='val')
+                          input_json=opt.input_json,num_val=opt.num_val, data_split='val')
 
 dataloader_val = torch.utils.data.DataLoader(dataset_val, batch_size=5,
                                              shuffle=False, num_workers=int(opt.workers))
