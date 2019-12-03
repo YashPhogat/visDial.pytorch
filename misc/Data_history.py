@@ -11,7 +11,7 @@ from nltk.tokenize import word_tokenize
 import nltk
 nltk.download('punkt')
 
-input_json = '../script/data/visdial_params_demo.json'
+input_json = '../script/data/visdial_params.json'
 word2ind_path = '../script/data/word2ind.json'
 f = json.load(open(input_json, 'r'))
 itow = f['itow']
