@@ -251,6 +251,9 @@ def train(epoch):
             num_ind_rnd_input = torch.LongTensor(num_ind_rnd.size()).cuda()
             num_ind_rnd_input.copy_(num_ind_rnd)
 
+            if opt.debug:
+                print('aa')
+
             ques_emb = netW(ques_input, format = 'index')
             his_emb = netW(his_input, format = 'index')
 
