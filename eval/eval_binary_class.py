@@ -186,7 +186,7 @@ def get_questions_history_tensor(question_data, j, history_data):
 def get_imgs(img_data):
     img = torch.from_numpy(img_data)
     image = img.view(-1, img_feat_size)
-    img_input = torch.FloatTensor(opt.batchSize, 49, 512)
+    img_input = torch.FloatTensor(opt.batchSize, 49, 512).cuda()
     with torch.no_grad():
         img_input.resize_(image.size()).copy_(image)
 
@@ -214,10 +214,10 @@ for i in range(0, n, batch_size):
 
         ind = 1
 
-        his_input = torch.LongTensor(his.size())
+        his_input = torch.LongTensor(his.size()).cuda()
         his_input.copy_(his)
 
-        ques_input = torch.LongTensor(ques.size())
+        ques_input = torch.LongTensor(ques.size()).cuda()
         ques_input.copy_(ques)
 
         ques_emb = netW(ques_input, format='index')
