@@ -118,7 +118,7 @@ his_length = dataset_val.ques_length + dataset_val.ans_length  # 24
 itow = dataset_val.itow  # index to word
 img_feat_size = opt.conv_feat_size  # 512
 
-mapping_file = '../script/data/mapped.json'
+mapping_file = '../script/data/modified_mapped.json'
 mapping_data = json.load(open(mapping_file))
 
 ################################################################################
@@ -207,6 +207,26 @@ for i in range(0, n, batch_size):
     img_data = imgs[start:end]
     question_list, history_list = get_questions_and_history(start, end, mapping_data)  # bs x 6 x 16
 
+    # answer yes no
+    ans_fv_np = np.zeros((9, 2, 1), dtype=np.int32)
+    ans_fv_np[0] = vocab_size
+    ans_fv_np[1, 0] = 1188
+    ans_fv_np[1, 1] = 4059
+
+    ans_lv_np = np.zeros((9, 2, 1), dtype=np.int32)
+    ans_lv_np[1] = vocab_size
+    ans_lv_np[0, 0] = 1188
+    ans_lv_np[0, 1] = 4059
+
+    ans_fv = torch.from_numpy(ans_fv_np)
+    ans_lv = torch.from_numpy(ans_lv_np)
+
+    ans_fv = ans_fv.expand(9, 2, cur_bs)
+    ans_lv = ans_lv.expand(9, 2, cur_bs)
+
+    ans_fv = ans_fv.reshape(9, -1)
+    ans_lv = ans_lv.reshape(9, -1)
+
     save_tmp = [[] for j in range(cur_bs)]
 
     for j in range(6):
@@ -225,6 +245,12 @@ for i in range(0, n, batch_size):
         ques_input = torch.LongTensor(ques.size()).cuda()
         ques_input.copy_(ques)
 
+        ans_input = torch.LongTensor(ans_fv.size()).cuda()
+        ans_input.copy_(ans_fv)
+
+        ans_target = torch.LongTensor(ans_lv.size()).cuda()
+        ans_target.copy_(ans_lv)
+
         ques_emb = netW(ques_input, format='index')
         his_emb = netW(his_input, format='index')
 
@@ -236,24 +262,50 @@ for i in range(0, n, batch_size):
 
         _, ques_hidden = netG(encoder_feat.view(1, -1, opt.ninp), ques_hidden)
 
-        ans_sample = torch.from_numpy(vocab_size*np.ones((cur_bs)))
+        ################################################################################
 
-        sample_ans_input = torch.LongTensor(1, cur_bs).cuda()
-        sample_ans_input.resize_((1, cur_bs)).fill_(vocab_size)
+        hidden_replicated = []
+        for hid in ques_hidden:
+            hidden_replicated.append(hid.view(opt.nlayers, cur_bs, 1, \
+                                              opt.nhid).expand(opt.nlayers, cur_bs, 2, opt.nhid).clone().view(
+                opt.nlayers, -1, opt.nhid))
+        hidden_replicated = tuple(hidden_replicated)
 
-        sample_opt = {'beam_size': 1, 'seq_length': 16}
+        ans_emb = netW(ans_input, format='index')
 
-        seq, seqLogprobs = netG.sample(netW, sample_ans_input, ques_hidden, sample_opt)
-        ans_sample_txt = decode_txt(itow, seq.t())
+        output, _ = netG(ans_emb, hidden_replicated)
+        logprob = - output
+        logprob_select = torch.gather(logprob, 1, ans_target.view(-1, 1))
+
+        mask = ans_target.data.eq(0)  # generate the mask
+        logprob_select.masked_fill_(mask.view_as(logprob_select), 0)
+
+        prob = logprob_select.view(ans_length, -1, 2).sum(0).view(-1, 2)
+        prob_np = prob.cpu().detach().numpy()
+        #####################################################################################################3
+
+        # ans_sample = torch.from_numpy(vocab_size*np.ones((cur_bs)))
+        #
+        # sample_ans_input = torch.LongTensor(1, cur_bs).cuda()
+        # sample_ans_input.resize_((1, cur_bs)).fill_(vocab_size)
+        #
+        # sample_opt = {'beam_size': 1, 'seq_length': 16}
+        #
+        # seq, seqLogprobs = netG.sample(netW, sample_ans_input, ques_hidden, sample_opt)
+        # ans_sample_txt = decode_txt(itow, seq.t())
 
         for b in range(cur_bs):
             data_dict = {}
-            data_dict['ans'] = ans_sample_txt[b]
+            data_dict['yes_prob'] = prob_np[b,0]
+            data_dict['no_prob'] = prob_np[b, 1]
             save_tmp[b].append(data_dict)
 
     result_all += save_tmp
 
     if(i>20):
+        print('--------------------------------')
+        print(i)
+        print('--------------------------------')
         break
 
 json.dump(result_all, open(file_name+'.json', 'w'))
