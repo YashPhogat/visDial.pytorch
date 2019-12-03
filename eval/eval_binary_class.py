@@ -296,8 +296,8 @@ for i in range(0, n, batch_size):
 
         for b in range(cur_bs):
             data_dict = {}
-            data_dict['yes_prob'] = prob_np[b,0]
-            data_dict['no_prob'] = prob_np[b, 1]
+            data_dict['yes_prob'] = str(prob_np[b,0])
+            data_dict['no_prob'] = str(prob_np[b, 1])
             save_tmp[b].append(data_dict)
 
     result_all += save_tmp
