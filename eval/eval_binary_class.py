@@ -300,6 +300,7 @@ for i in range(0, n, batch_size):
             data_dict['no_prob'] = str(prob_np[b, 1])
             save_tmp[b].append(data_dict)
 
+    print('done : {}/{}'.format(i,int(n/batch_size)))
     result_all += save_tmp
 
 json.dump(result_all, open(file_name+'.json', 'w'))
