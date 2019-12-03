@@ -145,7 +145,7 @@ netE.eval()
 netW.eval()
 netG.eval()
 
-input_img_h5 = '../script/data_old/vdl_img_vgg.h5'
+input_img_h5 = '../script/old_data/vdl_img_vgg.h5'
 f_image = h5py.File(input_img_h5, 'r')
 imgs = f_image['images_train']
 
