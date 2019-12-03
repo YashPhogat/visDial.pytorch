@@ -284,6 +284,8 @@ for i in range(0, n, batch_size):
 
         output, _ = netG(ans_emb, hidden_replicated)
 
+        output = output.reshape(9,-1,vocab_size+1).cpu().detach().numpy()
+
         if opt.debug:
             print(output.shape)
             print(output.reshape(9,-1,vocab_size+1)[0,0,yes_idx])
@@ -292,14 +294,16 @@ for i in range(0, n, batch_size):
             print(output.reshape(9, -1, vocab_size + 1)[0, 1, yes_idx])
             print(output.reshape(9, -1, vocab_size + 1)[0, 1, no_idx])
 
-        logprob = - output
-        logprob_select = torch.gather(logprob, 1, ans_target.view(-1, 1))
+            print('\n')
 
-        mask = ans_target.data.eq(0)  # generate the mask
-        logprob_select.masked_fill_(mask.view_as(logprob_select), 0)
-
-        prob = logprob_select.view(ans_length, -1, 2).sum(0).view(-1, 2)
-        prob_np = prob.cpu().detach().numpy()
+        # logprob = - output
+        # logprob_select = torch.gather(logprob, 1, ans_target.view(-1, 1))
+        #
+        # mask = ans_target.data.eq(0)  # generate the mask
+        # logprob_select.masked_fill_(mask.view_as(logprob_select), 0)
+        #
+        # prob = logprob_select.view(ans_length, -1, 2).sum(0).view(-1, 2)
+        # prob_np = prob.cpu().detach().numpy()
         #####################################################################################################3
 
         # ans_sample = torch.from_numpy(vocab_size*np.ones((cur_bs)))
@@ -314,8 +318,8 @@ for i in range(0, n, batch_size):
 
         for b in range(cur_bs):
             data_dict = {}
-            data_dict['yes_prob'] = str(prob_np[b,0])
-            data_dict['no_prob'] = str(prob_np[b, 1])
+            data_dict['yes_prob'] = str(output[0,b*2,yes_idx])
+            data_dict['no_prob'] = str(output[0,b*2,no_idx])
             save_tmp[b].append(data_dict)
 
     if opt.debug:
@@ -325,6 +329,8 @@ for i in range(0, n, batch_size):
     print('done : {}/{}'.format(i,n))
     result_all += save_tmp
 
+if opt.debug:
+    json.dump(result_all, open('debug.json', 'w'))
 if not opt.debug:
     json.dump(result_all, open(file_name+'.json', 'w'))
 
