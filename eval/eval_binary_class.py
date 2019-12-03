@@ -238,7 +238,7 @@ for i in range(0, n, batch_size):
 
         ans_sample = torch.from_numpy(vocab_size*np.ones((cur_bs)))
 
-        sample_ans_input = torch.LongTensor(1, cur_bs)
+        sample_ans_input = torch.LongTensor(1, cur_bs).cuda()
         sample_ans_input.resize_((1, cur_bs)).fill_(vocab_size)
 
         sample_opt = {'beam_size': 1, 'seq_length': 16}
